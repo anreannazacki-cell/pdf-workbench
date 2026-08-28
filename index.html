@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111827">
+
   <title>PDF Workbench</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
   <style>
     * {
@@ -80,12 +83,10 @@
       padding: 17px 14px;
       text-align: left;
       cursor: pointer;
-      transition: .15s;
     }
 
-    .tool:hover {
-      border-color: #172033;
-      transform: translateY(-1px);
+    .tool.active {
+      border: 2px solid #172033;
     }
 
     .tool strong {
@@ -100,6 +101,7 @@
     }
 
     .upload {
+      display: block;
       border: 2px dashed #cfd4dc;
       border-radius: 16px;
       padding: 35px 15px;
@@ -136,27 +138,24 @@
     }
 
     .file-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px;
+      padding: 14px;
       background: #f5f7fa;
-      border-radius: 10px;
+      border-radius: 12px;
       margin-bottom: 8px;
     }
 
     .file-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       font-size: 14px;
+      font-weight: bold;
+      display: block;
+      word-break: break-word;
     }
 
     .file-size {
       color: #667085;
       font-size: 12px;
-      white-space: nowrap;
+      display: block;
+      margin-top: 4px;
     }
 
     .process {
@@ -175,14 +174,51 @@
 
     .process:disabled {
       opacity: .55;
-      cursor: not-allowed;
     }
 
     .status {
-      margin-top: 14px;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #f5f7fa;
       font-size: 14px;
-      text-align: center;
       display: none;
+    }
+
+    .result {
+      margin-top: 12px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #f5f7fa;
+      display: none;
+    }
+
+    .result-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .result-size {
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .download {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      background: #172033;
+      color: white;
+      padding: 13px;
+      border-radius: 11px;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    .warning {
+      margin-top: 10px;
+      color: #8a5a00;
+      font-size: 13px;
     }
 
     footer {
@@ -214,173 +250,312 @@
 
 <body>
 
-  <main class="app">
+<main class="app">
 
-    <header>
-      <div class="logo">PDF</div>
-      <h1>PDF Workbench</h1>
-      <p class="subtitle">Kerjakan PDF lebih cepat, simpel, dan tanpa ribet.</p>
-    </header>
+  <header>
+    <div class="logo">PDF</div>
+    <h1>PDF Workbench</h1>
+    <p class="subtitle">
+      Kerjakan PDF lebih cepat, simpel, dan tanpa ribet.
+    </p>
+  </header>
 
-    <section class="card">
-      <h2>Apa yang ingin kamu lakukan?</h2>
+  <section class="card">
 
-      <div class="tools">
+    <h2>Apa yang ingin kamu lakukan?</h2>
 
-        <button class="tool" data-tool="PDF → Word">
-          <strong>📄 PDF → Word</strong>
-          <span>Ubah PDF menjadi dokumen Word.</span>
-        </button>
+    <div class="tools">
 
-        <button class="tool" data-tool="PDF → Excel">
-          <strong>📊 PDF → Excel</strong>
-          <span>Ambil data PDF menjadi spreadsheet.</span>
-        </button>
-
-        <button class="tool" data-tool="OCR">
-          <strong>🔎 OCR / Ambil Teks</strong>
-          <span>Ekstrak teks dari scan atau gambar.</span>
-        </button>
-
-        <button class="tool" data-tool="Compress">
-          <strong>⚡ Compress PDF</strong>
-          <span>Kurangi ukuran file PDF.</span>
-        </button>
-
-        <button class="tool" data-tool="Merge">
-          <strong>📚 Gabungkan PDF</strong>
-          <span>Satukan beberapa PDF menjadi satu.</span>
-        </button>
-
-        <button class="tool" data-tool="Split">
-          <strong>✂️ Pisahkan PDF</strong>
-          <span>Pisahkan halaman PDF sesuai kebutuhan.</span>
-        </button>
-
-      </div>
-    </section>
-
-    <section class="card">
-
-      <h2 id="selectedTool">Pilih file PDF</h2>
-
-      <label class="upload" for="pdfFiles">
-        <div class="upload-icon">⬆️</div>
-        <strong>Ketuk untuk memilih PDF</strong>
-        <small>Kamu bisa memilih beberapa file sekaligus.</small>
-      </label>
-
-      <input
-        type="file"
-        id="pdfFiles"
-        accept=".pdf,application/pdf"
-        multiple
-      >
-
-      <div class="files" id="fileList"></div>
-
-      <button class="process" id="processBtn">
-        Proses PDF
+      <button class="tool" data-tool="PDF → Word">
+        <strong>📄 PDF → Word</strong>
+        <span>Ubah PDF menjadi dokumen Word.</span>
       </button>
 
-      <div class="status" id="status"></div>
+      <button class="tool" data-tool="PDF → Excel">
+        <strong>📊 PDF → Excel</strong>
+        <span>Ambil data PDF menjadi spreadsheet.</span>
+      </button>
 
-    </section>
+      <button class="tool" data-tool="OCR">
+        <strong>🔎 OCR / Ambil Teks</strong>
+        <span>Ekstrak teks dari scan atau gambar.</span>
+      </button>
 
-    <footer>
-      PDF Workbench • V1
-    </footer>
+      <button class="tool active" data-tool="Compress">
+        <strong>⚡ Compress PDF</strong>
+        <span>Kurangi ukuran file PDF.</span>
+      </button>
 
-  </main>
+      <button class="tool" data-tool="Merge">
+        <strong>📚 Gabungkan PDF</strong>
+        <span>Satukan beberapa PDF menjadi satu.</span>
+      </button>
 
-  <script>
-    const fileInput = document.getElementById("pdfFiles");
-    const fileList = document.getElementById("fileList");
-    const processBtn = document.getElementById("processBtn");
-    const status = document.getElementById("status");
-    const selectedTool = document.getElementById("selectedTool");
+      <button class="tool" data-tool="Split">
+        <strong>✂️ Pisahkan PDF</strong>
+        <span>Pisahkan halaman PDF sesuai kebutuhan.</span>
+      </button>
 
-    let selectedFiles = [];
-    let currentTool = "";
+    </div>
 
-    document.querySelectorAll(".tool").forEach(button => {
-      button.addEventListener("click", () => {
-        currentTool = button.dataset.tool;
-        selectedTool.textContent = currentTool + " — pilih file PDF";
+  </section>
+
+  <section class="card">
+
+    <h2>Compress PDF</h2>
+
+    <label class="upload" for="pdfFiles">
+      <div class="upload-icon">⬆️</div>
+      <strong>Ketuk untuk memilih PDF</strong>
+      <small>Pilih satu atau beberapa file sekaligus.</small>
+    </label>
+
+    <input
+      type="file"
+      id="pdfFiles"
+      accept=".pdf,application/pdf"
+      multiple
+    >
+
+    <div class="files" id="fileList"></div>
+
+    <button class="process" id="processBtn">
+      ⚡ Compress PDF
+    </button>
+
+    <div class="status" id="status"></div>
+
+    <div class="result" id="result">
+      <div class="result-title">Hasil kompresi</div>
+      <div class="result-size" id="resultSize"></div>
+      <a class="download" id="downloadBtn">
+        Download PDF
+      </a>
+    </div>
+
+  </section>
+
+  <footer>
+    PDF Workbench • V1
+  </footer>
+
+</main>
+
+<script>
+
+  const fileInput = document.getElementById("pdfFiles");
+  const fileList = document.getElementById("fileList");
+  const processBtn = document.getElementById("processBtn");
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+  const resultSize = document.getElementById("resultSize");
+  const downloadBtn = document.getElementById("downloadBtn");
+
+  let selectedFiles = [];
+
+  document.querySelectorAll(".tool").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      document.querySelectorAll(".tool")
+        .forEach(btn => btn.classList.remove("active"));
+
+      button.classList.add("active");
+
+      const tool = button.dataset.tool;
+
+      if (tool === "Compress") {
         fileInput.click();
+      } else {
+        alert(
+          tool +
+          " belum aktif di V1. Kita aktifkan satu per satu."
+        );
+      }
+
+    });
+
+  });
+
+  fileInput.addEventListener("change", () => {
+
+    selectedFiles = Array.from(fileInput.files);
+
+    renderFiles();
+
+    result.style.display = "none";
+
+    if (selectedFiles.length > 0) {
+      processBtn.style.display = "block";
+      status.style.display = "none";
+    }
+
+  });
+
+  function renderFiles() {
+
+    fileList.innerHTML = "";
+
+    if (selectedFiles.length === 0) {
+      fileList.style.display = "none";
+      return;
+    }
+
+    fileList.style.display = "block";
+
+    selectedFiles.forEach(file => {
+
+      const item = document.createElement("div");
+
+      item.className = "file-item";
+
+      item.innerHTML = `
+        <span class="file-name">
+          ${escapeHTML(file.name)}
+        </span>
+
+        <span class="file-size">
+          Ukuran asli: ${formatSize(file.size)}
+        </span>
+      `;
+
+      fileList.appendChild(item);
+
+    });
+
+  }
+
+  processBtn.addEventListener("click", async () => {
+
+    if (selectedFiles.length === 0) return;
+
+    processBtn.disabled = true;
+    processBtn.textContent = "⚡ Memproses...";
+
+    result.style.display = "none";
+    status.style.display = "block";
+    status.textContent = "Membaca PDF...";
+
+    try {
+
+      const file = selectedFiles[0];
+
+      const originalBytes = await file.arrayBuffer();
+
+      status.textContent = "Mengoptimalkan PDF...";
+
+      const pdfDoc = await PDFLib.PDFDocument.load(
+        originalBytes
+      );
+
+      const compressedBytes = await pdfDoc.save({
+        useObjectStreams: true
       });
-    });
 
-    fileInput.addEventListener("change", () => {
-      selectedFiles = Array.from(fileInput.files);
+      const originalSize = file.size;
+      const newSize = compressedBytes.length;
 
-      renderFiles();
+      if (newSize >= originalSize) {
 
-      if (selectedFiles.length > 0) {
-        processBtn.style.display = "block";
-        status.style.display = "none";
-      }
-    });
+        status.innerHTML =
+          "PDF ini sudah cukup optimal. " +
+          "Tidak ada pengurangan ukuran yang aman " +
+          "dari metode V1.";
 
-    function renderFiles() {
-      fileList.innerHTML = "";
+        result.style.display = "none";
 
-      if (selectedFiles.length === 0) {
-        fileList.style.display = "none";
-        return;
-      }
+      } else {
 
-      fileList.style.display = "block";
+        const reduction =
+          ((originalSize - newSize) / originalSize) * 100;
 
-      selectedFiles.forEach(file => {
-        const item = document.createElement("div");
-        item.className = "file-item";
+        const blob = new Blob(
+          [compressedBytes],
+          { type: "application/pdf" }
+        );
 
-        item.innerHTML = `
-          <span class="file-name">${escapeHTML(file.name)}</span>
-          <span class="file-size">${formatSize(file.size)}</span>
+        const url = URL.createObjectURL(blob);
+
+        downloadBtn.href = url;
+
+        downloadBtn.download =
+          createOutputName(file.name);
+
+        resultSize.innerHTML = `
+          <strong>${formatSize(originalSize)}</strong>
+          →
+          <strong>${formatSize(newSize)}</strong>
+          <br>
+          Hemat sekitar
+          <strong>${reduction.toFixed(1)}%</strong>
         `;
 
-        fileList.appendChild(item);
-      });
-    }
+        result.style.display = "block";
 
-    processBtn.addEventListener("click", () => {
-      if (selectedFiles.length === 0) return;
+        status.textContent =
+          "PDF berhasil dioptimalkan.";
 
-      processBtn.disabled = true;
-      processBtn.textContent = "Menyiapkan...";
-
-      status.style.display = "block";
-      status.textContent =
-        `${selectedFiles.length} file siap diproses.`;
-
-      setTimeout(() => {
-        processBtn.disabled = false;
-        processBtn.textContent = "Proses PDF";
-      }, 800);
-    });
-
-    function formatSize(bytes) {
-      if (bytes < 1024) return bytes + " B";
-
-      if (bytes < 1024 * 1024) {
-        return (bytes / 1024).toFixed(1) + " KB";
       }
 
-      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    } catch (error) {
+
+      console.error(error);
+
+      status.textContent =
+        "PDF tidak dapat diproses. " +
+        "Coba gunakan file PDF lain.";
+
     }
 
-    function escapeHTML(text) {
-      return text.replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      }[char]));
+    processBtn.disabled = false;
+    processBtn.textContent = "⚡ Compress PDF";
+
+  });
+
+  function createOutputName(name) {
+
+    const dot = name.lastIndexOf(".");
+
+    if (dot === -1) {
+      return name + "-compressed.pdf";
     }
-  </script>
+
+    return (
+      name.substring(0, dot) +
+      "-compressed.pdf"
+    );
+
+  }
+
+  function formatSize(bytes) {
+
+    if (bytes < 1024) {
+      return bytes + " B";
+    }
+
+    if (bytes < 1024 * 1024) {
+      return (bytes / 1024).toFixed(1) + " KB";
+    }
+
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+
+  }
+
+  function escapeHTML(text) {
+
+    return text.replace(/[&<>"']/g, char => ({
+
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+
+    }[char]));
+
+  }
+
+</script>
 
 </body>
 </html>

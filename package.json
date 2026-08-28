@@ -1,0 +1,16 @@
+{
+  "name": "pdf-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@fileslim/compress": "2.3.0"
+  },
+  "devDependencies": {
+    "vite": "7.1.3"
+  }
+}

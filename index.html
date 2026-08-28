@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111827">
+  <title>PDF Workbench</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      color: #172033;
+    }
+
+    .app {
+      max-width: 900px;
+      margin: auto;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      width: 58px;
+      height: 58px;
+      margin: auto;
+      border-radius: 16px;
+      background: #172033;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    h1 {
+      margin: 14px 0 6px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #667085;
+      font-size: 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.07);
+      margin-bottom: 18px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 19px;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .tool {
+      border: 1px solid #e4e7ec;
+      background: white;
+      border-radius: 14px;
+      padding: 17px 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: .15s;
+    }
+
+    .tool:hover {
+      border-color: #172033;
+      transform: translateY(-1px);
+    }
+
+    .tool strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 5px;
+    }
+
+    .tool span {
+      color: #667085;
+      font-size: 12px;
+    }
+
+    .upload {
+      border: 2px dashed #cfd4dc;
+      border-radius: 16px;
+      padding: 35px 15px;
+      text-align: center;
+      cursor: pointer;
+      background: #fafbfc;
+    }
+
+    .upload:hover {
+      border-color: #172033;
+    }
+
+    .upload-icon {
+      font-size: 35px;
+      margin-bottom: 10px;
+    }
+
+    .upload strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .upload small {
+      color: #667085;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .files {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      background: #f5f7fa;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+
+    .file-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .file-size {
+      color: #667085;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .process {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 14px;
+      background: #172033;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+    }
+
+    .process:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+
+    footer {
+      text-align: center;
+      color: #98a2b3;
+      font-size: 12px;
+      margin-top: 25px;
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 20px 13px 30px;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      .tools {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 17px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="app">
+
+    <header>
+      <div class="logo">PDF</div>
+      <h1>PDF Workbench</h1>
+      <p class="subtitle">Kerjakan PDF lebih cepat, simpel, dan tanpa ribet.</p>
+    </header>
+
+    <section class="card">
+      <h2>Apa yang ingin kamu lakukan?</h2>
+
+      <div class="tools">
+
+        <button class="tool" data-tool="PDF → Word">
+          <strong>📄 PDF → Word</strong>
+          <span>Ubah PDF menjadi dokumen Word.</span>
+        </button>
+
+        <button class="tool" data-tool="PDF → Excel">
+          <strong>📊 PDF → Excel</strong>
+          <span>Ambil data PDF menjadi spreadsheet.</span>
+        </button>
+
+        <button class="tool" data-tool="OCR">
+          <strong>🔎 OCR / Ambil Teks</strong>
+          <span>Ekstrak teks dari scan atau gambar.</span>
+        </button>
+
+        <button class="tool" data-tool="Compress">
+          <strong>⚡ Compress PDF</strong>
+          <span>Kurangi ukuran file PDF.</span>
+        </button>
+
+        <button class="tool" data-tool="Merge">
+          <strong>📚 Gabungkan PDF</strong>
+          <span>Satukan beberapa PDF menjadi satu.</span>
+        </button>
+
+        <button class="tool" data-tool="Split">
+          <strong>✂️ Pisahkan PDF</strong>
+          <span>Pisahkan halaman PDF sesuai kebutuhan.</span>
+        </button>
+
+      </div>
+    </section>
+
+    <section class="card">
+
+      <h2 id="selectedTool">Pilih file PDF</h2>
+
+      <label class="upload" for="pdfFiles">
+        <div class="upload-icon">⬆️</div>
+        <strong>Ketuk untuk memilih PDF</strong>
+        <small>Kamu bisa memilih beberapa file sekaligus.</small>
+      </label>
+
+      <input
+        type="file"
+        id="pdfFiles"
+        accept=".pdf,application/pdf"
+        multiple
+      >
+
+      <div class="files" id="fileList"></div>
+
+      <button class="process" id="processBtn">
+        Proses PDF
+      </button>
+
+      <div class="status" id="status"></div>
+
+    </section>
+
+    <footer>
+      PDF Workbench • V1
+    </footer>
+
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("pdfFiles");
+    const fileList = document.getElementById("fileList");
+    const processBtn = document.getElementById("processBtn");
+    const status = document.getElementById("status");
+    const selectedTool = document.getElementById("selectedTool");
+
+    let selectedFiles = [];
+    let currentTool = "";
+
+    document.querySelectorAll(".tool").forEach(button => {
+      button.addEventListener("click", () => {
+        currentTool = button.dataset.tool;
+        selectedTool.textContent = currentTool + " — pilih file PDF";
+        fileInput.click();
+      });
+    });
+
+    fileInput.addEventListener("change", () => {
+      selectedFiles = Array.from(fileInput.files);
+
+      renderFiles();
+
+      if (selectedFiles.length > 0) {
+        processBtn.style.display = "block";
+        status.style.display = "none";
+      }
+    });
+
+    function renderFiles() {
+      fileList.innerHTML = "";
+
+      if (selectedFiles.length === 0) {
+        fileList.style.display = "none";
+        return;
+      }
+
+      fileList.style.display = "block";
+
+      selectedFiles.forEach(file => {
+        const item = document.createElement("div");
+        item.className = "file-item";
+
+        item.innerHTML = `
+          <span class="file-name">${escapeHTML(file.name)}</span>
+          <span class="file-size">${formatSize(file.size)}</span>
+        `;
+
+        fileList.appendChild(item);
+      });
+    }
+
+    processBtn.addEventListener("click", () => {
+      if (selectedFiles.length === 0) return;
+
+      processBtn.disabled = true;
+      processBtn.textContent = "Menyiapkan...";
+
+      status.style.display = "block";
+      status.textContent =
+        `${selectedFiles.length} file siap diproses.`;
+
+      setTimeout(() => {
+        processBtn.disabled = false;
+        processBtn.textContent = "Proses PDF";
+      }, 800);
+    });
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+
+      if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + " KB";
+      }
+
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function escapeHTML(text) {
+      return text.replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+  </script>
+
+</body>
+</html>

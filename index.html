@@ -1,1611 +1,477 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
-  <meta name="theme-color" content="#0b1020" />
-  <meta
-    name="description"
-    content="PDF Workbench — kompres PDF dengan cepat, sederhana, dan privat."
-  />
-
-  <title>PDF Workbench</title>
-
-  <style>
-    :root {
-      --bg: #0b1020;
-      --bg-soft: #10172a;
-      --card: rgba(20, 29, 49, 0.92);
-      --card-2: #151f35;
-      --border: rgba(255, 255, 255, 0.09);
-      --text: #f4f7fb;
-      --muted: #9aa7bc;
-      --accent: #6d8cff;
-      --accent-2: #8b7cff;
-      --success: #3ddc97;
-      --danger: #ff6b7a;
-      --warning: #ffca6b;
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
-      --radius: 24px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(
-          circle at 15% 0%,
-          rgba(109, 140, 255, 0.18),
-          transparent 34%
-        ),
-        radial-gradient(
-          circle at 90% 15%,
-          rgba(139, 124, 255, 0.13),
-          transparent 30%
-        ),
-        var(--bg);
-      color: var(--text);
-      font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-    }
-
-    button,
-    input {
-      font: inherit;
-    }
-
-    button {
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .app {
-      width: min(100%, 760px);
-      margin: 0 auto;
-      padding: 24px 16px 50px;
-    }
-
-    /* Header */
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-    }
-
-    .brand-icon {
-      width: 48px;
-      height: 48px;
-      display: grid;
-      place-items: center;
-      border-radius: 16px;
-      background:
-        linear-gradient(
-          145deg,
-          var(--accent),
-          var(--accent-2)
-        );
-      box-shadow:
-        0 12px 28px rgba(109, 140, 255, 0.25);
-      font-weight: 900;
-      font-size: 18px;
-    }
-
-    .brand-name {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.4px;
-    }
-
-    .brand-subtitle {
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .privacy-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.035);
-      color: #c9d4e6;
-      font-size: 11px;
-      white-space: nowrap;
-    }
-
-    .privacy-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 12px rgba(61, 220, 151, 0.65);
-    }
-
-    /* Hero */
-
-    .hero {
-      margin-bottom: 20px;
-    }
-
-    .hero h1 {
-      margin: 0;
-      font-size: clamp(30px, 8vw, 46px);
-      line-height: 1.04;
-      letter-spacing: -1.8px;
-    }
-
-    .hero h1 span {
-      background:
-        linear-gradient(
-          90deg,
-          #ffffff,
-          #9db1ff
-        );
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-
-    .hero p {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.6;
-      max-width: 620px;
-    }
-
-    /* Main card */
-
-    .card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background:
-        linear-gradient(
-          145deg,
-          rgba(255, 255, 255, 0.045),
-          rgba(255, 255, 255, 0.018)
-        ),
-        var(--card);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .card-header {
-      padding: 22px 22px 15px;
-    }
-
-    .eyebrow {
-      color: #91a5ff;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-    }
-
-    .card-title {
-      margin: 7px 0 0;
-      font-size: 21px;
-      letter-spacing: -0.5px;
-    }
-
-    .card-description {
-      margin: 7px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    /* Dropzone */
-
-    .dropzone {
-      margin: 0 18px 18px;
-      min-height: 205px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      border: 1.5px dashed rgba(139, 156, 201, 0.35);
-      border-radius: 20px;
-      background:
-        radial-gradient(
-          circle at center,
-          rgba(109, 140, 255, 0.08),
-          transparent 65%
-        ),
-        rgba(7, 12, 25, 0.38);
-      transition:
-        border-color 0.2s ease,
-        background 0.2s ease,
-        transform 0.2s ease;
-      cursor: pointer;
-    }
-
-    .dropzone:hover,
-    .dropzone.dragover {
-      border-color: rgba(125, 148, 255, 0.8);
-      background:
-        radial-gradient(
-          circle at center,
-          rgba(109, 140, 255, 0.14),
-          transparent 68%
-        ),
-        rgba(7, 12, 25, 0.5);
-    }
-
-    .dropzone.dragover {
-      transform: scale(1.01);
-    }
-
-    .upload-icon {
-      width: 62px;
-      height: 62px;
-      display: grid;
-      place-items: center;
-      margin-bottom: 14px;
-      border-radius: 20px;
-      background:
-        linear-gradient(
-          145deg,
-          rgba(109, 140, 255, 0.18),
-          rgba(139, 124, 255, 0.13)
-        );
-      border: 1px solid rgba(139, 156, 255, 0.15);
-      font-size: 27px;
-    }
-
-    .drop-title {
-      font-size: 16px;
-      font-weight: 750;
-    }
-
-    .drop-subtitle {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .choose-button {
-      margin-top: 17px;
-      padding: 11px 18px;
-      border: 0;
-      border-radius: 12px;
-      color: white;
-      background:
-        linear-gradient(
-          135deg,
-          var(--accent),
-          var(--accent-2)
-        );
-      font-weight: 750;
-      cursor: pointer;
-      box-shadow:
-        0 10px 22px rgba(109, 140, 255, 0.22);
-    }
-
-    .choose-button:active {
-      transform: translateY(1px);
-    }
-
-    #fileInput {
-      display: none;
-    }
-
-    /* File information */
-
-    .file-panel {
-      display: none;
-      margin: 0 18px 18px;
-      padding: 15px;
-      border-radius: 18px;
-      background: var(--card-2);
-      border: 1px solid var(--border);
-    }
-
-    .file-panel.visible {
-      display: block;
-    }
-
-    .file-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .file-icon {
-      width: 44px;
-      height: 44px;
-      flex: 0 0 44px;
-      display: grid;
-      place-items: center;
-      border-radius: 13px;
-      background: rgba(255, 94, 113, 0.1);
-      border: 1px solid rgba(255, 94, 113, 0.15);
-      font-size: 21px;
-    }
-
-    .file-info {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .file-name {
-      overflow-wrap: anywhere;
-      font-size: 13px;
-      font-weight: 750;
-    }
-
-    .file-size {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .remove-button {
-      width: 36px;
-      height: 36px;
-      flex: 0 0 36px;
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      color: #aab6c9;
-      background: rgba(255, 255, 255, 0.035);
-      cursor: pointer;
-    }
-
-    /* Compression settings */
-
-    .settings {
-      margin: 0 18px 18px;
-      padding: 17px;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.025);
-    }
-
-    .settings-title {
-      font-size: 12px;
-      font-weight: 800;
-      color: #cbd5e6;
-      margin-bottom: 12px;
-    }
-
-    .mode-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-    }
-
-    .mode {
-      padding: 12px 8px;
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      color: #b8c4d7;
-      background: rgba(255, 255, 255, 0.025);
-      cursor: pointer;
-      text-align: center;
-      transition: 0.18s ease;
-    }
-
-    .mode strong {
-      display: block;
-      color: #edf2fb;
-      font-size: 12px;
-    }
-
-    .mode small {
-      display: block;
-      margin-top: 4px;
-      font-size: 10px;
-      color: var(--muted);
-    }
-
-    .mode.active {
-      border-color: rgba(121, 143, 255, 0.7);
-      background: rgba(109, 140, 255, 0.11);
-      box-shadow:
-        inset 0 0 0 1px rgba(109, 140, 255, 0.08);
-    }
-
-    .mode.active strong {
-      color: #aebdff;
-    }
-
-    /* Process button */
-
-    .process-button {
-      width: calc(100% - 36px);
-      margin: 0 18px 10px;
-      min-height: 54px;
-      border: 0;
-      border-radius: 16px;
-      color: #ffffff;
-      background:
-        linear-gradient(
-          135deg,
-          var(--accent),
-          var(--accent-2)
-        );
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow:
-        0 15px 30px rgba(109, 140, 255, 0.2);
-      transition: 0.2s ease;
-    }
-
-    .process-button:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow:
-        0 18px 34px rgba(109, 140, 255, 0.27);
-    }
-
-    .process-button:disabled {
-      opacity: 0.42;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    .process-note {
-      padding: 0 20px 20px;
-      color: var(--muted);
-      text-align: center;
-      font-size: 10px;
-      line-height: 1.5;
-    }
-
-    /* Progress */
-
-    .progress-panel {
-      display: none;
-      margin: 0 18px 18px;
-      padding: 17px;
-      border-radius: 18px;
-      background: rgba(109, 140, 255, 0.065);
-      border: 1px solid rgba(109, 140, 255, 0.14);
-    }
-
-    .progress-panel.visible {
-      display: block;
-    }
-
-    .progress-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      color: #dce4f3;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .progress-bar {
-      height: 8px;
-      margin-top: 12px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.07);
-    }
-
-    .progress-fill {
-      width: 0%;
-      height: 100%;
-      border-radius: inherit;
-      background:
-        linear-gradient(
-          90deg,
-          var(--accent),
-          var(--accent-2)
-        );
-      transition: width 0.25s ease;
-    }
-
-    .progress-message {
-      margin-top: 9px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    /* Result */
-
-    .result {
-      display: none;
-      margin: 0 18px 18px;
-      padding: 19px;
-      border-radius: 20px;
-      background:
-        linear-gradient(
-          145deg,
-          rgba(61, 220, 151, 0.09),
-          rgba(61, 220, 151, 0.025)
-        );
-      border: 1px solid rgba(61, 220, 151, 0.18);
-    }
-
-    .result.visible {
-      display: block;
-    }
-
-    .result-label {
-      color: #8ce9c2;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-    }
-
-    .result-title {
-      margin-top: 5px;
-      font-size: 20px;
-      font-weight: 850;
-    }
-
-    .size-comparison {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 10px;
-      align-items: center;
-      margin-top: 17px;
-    }
-
-    .size-box {
-      padding: 14px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.035);
-      text-align: center;
-    }
-
-    .size-box small {
-      display: block;
-      color: var(--muted);
-      font-size: 10px;
-      margin-bottom: 5px;
-    }
-
-    .size-box strong {
-      font-size: 16px;
-    }
-
-    .arrow {
-      color: #8190a8;
-    }
-
-    .savings {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 13px;
-      background: rgba(61, 220, 151, 0.08);
-      color: #8ce9c2;
-      text-align: center;
-      font-weight: 800;
-      font-size: 13px;
-    }
-
-    .download-button {
-      width: 100%;
-      min-height: 50px;
-      margin-top: 14px;
-      border: 0;
-      border-radius: 14px;
-      background: #f4f7fb;
-      color: #101727;
-      font-weight: 850;
-      cursor: pointer;
-    }
-
-    /* Notice */
-
-    .notice {
-      display: none;
-      margin: 0 18px 18px;
-      padding: 14px 15px;
-      border-radius: 15px;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .notice.visible {
-      display: block;
-    }
-
-    .notice.error {
-      color: #ffb6bf;
-      background: rgba(255, 107, 122, 0.08);
-      border: 1px solid rgba(255, 107, 122, 0.15);
-    }
-
-    .notice.warning {
-      color: #ffd995;
-      background: rgba(255, 202, 107, 0.07);
-      border: 1px solid rgba(255, 202, 107, 0.13);
-    }
-
-    .notice.success {
-      color: #9bf0ca;
-      background: rgba(61, 220, 151, 0.07);
-      border: 1px solid rgba(61, 220, 151, 0.13);
-    }
-
-    /* Footer */
-
-    .footer {
-      margin-top: 22px;
-      text-align: center;
-      color: #66748b;
-      font-size: 10px;
-      line-height: 1.6;
-    }
-
-    .footer strong {
-      color: #8997ad;
-    }
-
-    /* Mobile */
-
-    @media (max-width: 520px) {
-      .app {
-        padding: 18px 12px 40px;
-      }
-
-      .header {
-        margin-bottom: 20px;
-      }
-
-      .privacy-pill {
-        display: none;
-      }
-
-      .brand-icon {
-        width: 43px;
-        height: 43px;
-      }
-
-      .brand-name {
-        font-size: 18px;
-      }
-
-      .hero h1 {
-        font-size: 34px;
-      }
-
-      .card-header {
-        padding: 19px 18px 14px;
-      }
-
-      .dropzone {
-        margin: 0 14px 14px;
-        min-height: 190px;
-        padding: 20px 15px;
-      }
-
-      .file-panel,
-      .settings,
-      .progress-panel,
-      .result,
-      .notice {
-        margin-left: 14px;
-        margin-right: 14px;
-      }
-
-      .process-button {
-        width: calc(100% - 28px);
-        margin-left: 14px;
-        margin-right: 14px;
-      }
-
-      .mode-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .mode {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        text-align: left;
-      }
-
-      .mode small {
-        margin-top: 0;
-      }
-
-      .size-comparison {
-        gap: 6px;
-      }
-
-      .size-box {
-        padding: 12px 8px;
-      }
-    }
-
-    /* Reduced motion */
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        scroll-behavior: auto !important;
-        transition: none !important;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>PDF Workbench — V1.2</title>
+<style>
+:root{
+  --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
+  --text:#f4f7ff;--muted:#9aa8c2;--primary:#7c8cff;--primary2:#9b6cff;
+  --good:#48d597;--warn:#ffc857;--danger:#ff667a;--shadow:0 18px 55px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 500px at 20% -10%,#253263 0%,transparent 55%),var(--bg);
+color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:980px;margin:auto;padding:18px 16px 48px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#8b8fff,#6f58ef);
+display:grid;place-items:center;font-weight:900;font-size:18px;box-shadow:0 12px 35px rgba(113,96,255,.3)}
+.brand b{font-size:18px}.brand span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.badge{border:1px solid var(--line);background:#11182a;color:#b9c4da;border-radius:999px;padding:8px 11px;font-size:12px}
+.hero{padding:10px 0 24px}.eyebrow{color:#9da8ff;font-size:12px;font-weight:800;letter-spacing:.12em}
+h1{font-size:clamp(36px,7vw,68px);line-height:.98;margin:12px 0 16px;letter-spacing:-.05em}
+.hero p{max-width:680px;color:var(--muted);font-size:17px;line-height:1.65;margin:0}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 20px}
+.tool{border:1px solid var(--line);background:linear-gradient(145deg,#151f35,#10182a);border-radius:20px;padding:17px;text-align:left;color:var(--text);transition:.18s;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+.tool:hover{transform:translateY(-2px);border-color:#5265a5}.tool.active{border-color:#7786ff;box-shadow:0 0 0 2px rgba(124,140,255,.15) inset}
+.tool .icon{font-size:23px}.tool b{display:block;margin:10px 0 5px;font-size:16px}.tool small{color:var(--muted);line-height:1.5}
+.card{background:linear-gradient(160deg,rgba(25,35,58,.96),rgba(15,23,40,.96));border:1px solid var(--line);border-radius:26px;padding:18px;box-shadow:var(--shadow);margin-top:14px}
+.card h2{margin:0;font-size:24px}.sub{color:var(--muted);line-height:1.55;margin:7px 0 16px}
+.drop{border:1.5px dashed #52627f;border-radius:22px;padding:24px;text-align:center;background:rgba(8,13,25,.38);transition:.18s}
+.drop.drag{border-color:#8895ff;background:rgba(124,140,255,.08)}
+.drop .uploadIcon{font-size:36px;margin-bottom:8px}.drop strong{font-size:18px;display:block}.drop span{display:block;color:var(--muted);font-size:13px;margin:6px 0 15px}
+.primary{border:0;border-radius:14px;padding:12px 18px;background:linear-gradient(135deg,#7385ff,#9a65ff);color:white;font-weight:800;box-shadow:0 10px 25px rgba(114,101,255,.25)}
+.secondary{border:1px solid var(--line);border-radius:13px;padding:10px 14px;background:#18233a;color:#dbe2f2;font-weight:700}
+.danger{border-color:rgba(255,102,122,.35);color:#ff9aaa;background:#241827}
+.primary:disabled,.secondary:disabled{opacity:.45;cursor:not-allowed}
+.files{display:grid;gap:8px;margin-top:13px}.file{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:13px;background:#0e1627;border:1px solid #24314c}
+.file .name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file small{color:var(--muted);white-space:nowrap}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:13px}.field{background:#0f1728;border:1px solid #293754;border-radius:15px;padding:12px}.field label{display:block;color:#aeb9d0;font-size:12px;font-weight:700;margin-bottom:7px}
+.field input,.field select{width:100%;border:1px solid #334361;background:#17223a;color:#f4f7ff;border-radius:11px;padding:10px;outline:none}
+.field input:focus,.field select:focus{border-color:#7d8bff}
+.field .hint{display:block;color:#7c8aa8;font-size:11px;margin-top:7px;line-height:1.5}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.mode{padding:12px;border:1px solid #2c3b5a;background:#121c30;border-radius:14px;text-align:left;color:#e8edfb}.mode.active{border-color:#7888ff;background:#202c4b}.mode b{display:block}.mode small{color:#94a2bd}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
+.progressWrap{margin-top:15px;display:none}.progressWrap.show{display:block}.progressHead{display:flex;justify-content:space-between;font-size:13px;color:#b6c2d8}.bar{height:9px;background:#0b1220;border-radius:99px;overflow:hidden;margin-top:8px;border:1px solid #26334c}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7185ff,#a06bff);transition:width .15s}
+.status{margin-top:12px;padding:11px 12px;border-radius:13px;background:#0d1526;border:1px solid #26334c;color:#aebbd2;font-size:13px;line-height:1.5;display:none}.status.show{display:block}.status.good{border-color:rgba(72,213,151,.3);color:#9af0c8}.status.warn{border-color:rgba(255,200,87,.3);color:#ffe19a}.status.err{border-color:rgba(255,102,122,.3);color:#ffabb8}
+.output{display:grid;gap:8px;margin-top:14px}.out{display:flex;align-items:center;gap:10px;border:1px solid #2a3955;background:#0e1728;border-radius:14px;padding:11px}.out .grow{flex:1;min-width:0}.out b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.out small{color:var(--muted)}
+.notice{margin-top:13px;padding:11px 12px;border-radius:13px;background:rgba(255,200,87,.07);border:1px solid rgba(255,200,87,.2);color:#e9dcae;font-size:12px;line-height:1.55}
+footer{text-align:center;color:#667590;font-size:12px;padding:24px}
+@media(max-width:680px){.tools{grid-template-columns:1fr}.row{grid-template-columns:1fr}.modes{grid-template-columns:1fr}.app{padding:14px 12px 40px}.card{padding:15px;border-radius:22px}.hero p{font-size:15px}}
+</style>
 </head>
-
 <body>
-  <main class="app">
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
+    <div class="badge">V1.2 • Browser-first</div>
+  </header>
 
-    <header class="header">
-      <div class="brand">
-        <div class="brand-icon">PDF</div>
+  <section class="hero">
+    <div class="eyebrow">PRIVATE • FAST • SIMPLE</div>
+    <h1>Kerjakan PDF<br>lebih sederhana.</h1>
+    <p>File diproses langsung di browser. Tidak perlu upload ke server. Pilih alat, masukkan file, proses, lalu simpan hasilnya.</p>
+  </section>
 
-        <div>
-          <div class="brand-name">PDF Workbench</div>
-          <div class="brand-subtitle">Simple tools. Better PDFs.</div>
-        </div>
-      </div>
+  <section class="tools" id="tools">
+    <button class="tool active" data-tool="compress"><span class="icon">⚡</span><b>Compress PDF</b><small>Kurangi ukuran file dengan pilihan kualitas.</small></button>
+    <button class="tool" data-tool="merge"><span class="icon">📚</span><b>Gabungkan PDF</b><small>Satukan beberapa PDF menjadi satu dokumen.</small></button>
+    <button class="tool" data-tool="split"><span class="icon">✂️</span><b>Pisahkan PDF</b><small>Ambil halaman tertentu atau beberapa rentang.</small></button>
+    <button class="tool" data-tool="word"><span class="icon">📄</span><b>PDF → Word</b><small>Ekstrak teks PDF menjadi dokumen Word.</small></button>
+    <button class="tool" data-tool="excel"><span class="icon">📊</span><b>PDF → Excel</b><small>Ekstrak teks menjadi spreadsheet yang bisa diedit.</small></button>
+    <button class="tool" data-tool="ocr"><span class="icon">🔎</span><b>OCR / Ambil Teks</b><small>Baca teks dari PDF scan atau gambar.</small></button>
+  </section>
 
-      <div class="privacy-pill">
-        <span class="privacy-dot"></span>
-        Diproses di perangkat
-      </div>
-    </header>
-
-    <section class="hero">
-      <h1>
-        Kerjakan PDF<br />
-        <span>lebih sederhana.</span>
-      </h1>
-
-      <p>
-        Kompres PDF tanpa upload ke server.
-        Pilih file, atur kualitas, proses, lalu download hasilnya.
-      </p>
-    </section>
-
-    <section class="card">
-
-      <div class="card-header">
-        <div class="eyebrow">PDF Compressor · V1</div>
-
-        <h2 class="card-title">
-          Compress PDF
-        </h2>
-
-        <p class="card-description">
-          Kurangi ukuran file sambil menjaga kualitas dokumen tetap nyaman dibaca.
-        </p>
-      </div>
-
-      <!-- Upload -->
-
-      <label
-        class="dropzone"
-        id="dropzone"
-        for="fileInput"
-      >
-        <div class="upload-icon">↑</div>
-
-        <div class="drop-title">
-          Pilih atau masukkan PDF
-        </div>
-
-        <div class="drop-subtitle">
-          PDF maksimal 200 MB untuk V1
-        </div>
-
-        <span class="choose-button">
-          Pilih File PDF
-        </span>
-      </label>
-
-      <input
-        id="fileInput"
-        type="file"
-        accept="application/pdf,.pdf"
-      />
-
-      <!-- File -->
-
-      <div
-        class="file-panel"
-        id="filePanel"
-      >
-        <div class="file-row">
-
-          <div class="file-icon">
-            📄
-          </div>
-
-          <div class="file-info">
-            <div
-              class="file-name"
-              id="fileName"
-            >
-              -
-            </div>
-
-            <div
-              class="file-size"
-              id="fileSize"
-            >
-              -
-            </div>
-          </div>
-
-          <button
-            class="remove-button"
-            id="removeButton"
-            type="button"
-            aria-label="Hapus file"
-          >
-            ×
-          </button>
-
-        </div>
-      </div>
-
-      <!-- Settings -->
-
-      <div class="settings">
-
-        <div class="settings-title">
-          Mode kompresi
-        </div>
-
-        <div class="mode-grid">
-
-          <button
-            class="mode"
-            type="button"
-            data-mode="low"
-          >
-            <strong>Light</strong>
-            <small>85% · 2000px</small>
-          </button>
-
-          <button
-            class="mode active"
-            type="button"
-            data-mode="balanced"
-          >
-            <strong>Balanced ⭐</strong>
-            <small>70% · 1600px</small>
-          </button>
-
-          <button
-            class="mode"
-            type="button"
-            data-mode="high"
-          >
-            <strong>Strong</strong>
-            <small>50% · 1200px</small>
-          </button>
-
-        </div>
-
-      </div>
-
-      <!-- Notice -->
-
-      <div
-        class="notice"
-        id="notice"
-      ></div>
-
-      <!-- Progress -->
-
-      <div
-        class="progress-panel"
-        id="progressPanel"
-      >
-        <div class="progress-top">
-          <span id="progressTitle">
-            Menyiapkan...
-          </span>
-
-          <span id="progressPercent">
-            0%
-          </span>
-        </div>
-
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            id="progressFill"
-          ></div>
-        </div>
-
-        <div
-          class="progress-message"
-          id="progressMessage"
-        >
-          Menyiapkan file...
-        </div>
-      </div>
-
-      <!-- Result -->
-
-      <div
-        class="result"
-        id="result"
-      >
-        <div class="result-label">
-          Compression complete
-        </div>
-
-        <div class="result-title">
-          PDF siap digunakan
-        </div>
-
-        <div class="size-comparison">
-
-          <div class="size-box">
-            <small>Ukuran awal</small>
-            <strong id="originalSize">-</strong>
-          </div>
-
-          <div class="arrow">→</div>
-
-          <div class="size-box">
-            <small>Ukuran hasil</small>
-            <strong id="compressedSize">-</strong>
-          </div>
-
-        </div>
-
-        <div
-          class="savings"
-          id="savings"
-        >
-          -
-        </div>
-
-        <button
-          class="download-button"
-          id="downloadButton"
-          type="button"
-        >
-          ↓ Download PDF
-        </button>
-      </div>
-
-      <!-- Process -->
-
-      <button
-        class="process-button"
-        id="processButton"
-        type="button"
-        disabled
-      >
-        Kompres PDF
-      </button>
-
-      <div class="process-note">
-        File diproses langsung di browser. Tidak di-upload ke server.
-      </div>
-
-    </section>
-
-    <footer class="footer">
-      <strong>PDF Workbench V1</strong><br />
-      Built for fast, simple PDF processing.
-    </footer>
-
+  <main class="card">
+    <div id="titleBlock"><h2>Compress PDF</h2><p class="sub">Kurangi ukuran file sambil menjaga kualitas dokumen tetap nyaman dibaca.</p></div>
+    <div id="drop" class="drop">
+      <div class="uploadIcon">↑</div>
+      <strong>Pilih atau masukkan PDF</strong>
+      <span id="dropHint">Maksimal 50 MB per file • Drag & drop juga tersedia.</span>
+      <button class="primary" id="pick">Pilih File PDF</button>
+      <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple hidden>
+    </div>
+    <div id="files" class="files"></div>
+    <div id="options"></div>
+    <div id="notice"></div>
+    <div class="actions">
+      <button class="primary" id="process">Proses PDF</button>
+      <button class="secondary danger" id="cancel" disabled>Batalkan</button>
+      <button class="secondary" id="clear">Reset</button>
+    </div>
+    <div class="progressWrap" id="progressWrap">
+      <div class="progressHead"><span id="progressText">Menyiapkan...</span><span id="progressPct">0%</span></div>
+      <div class="bar"><i id="progressBar"></i></div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="output" id="output"></div>
   </main>
 
-  <script type="module">
-    import { compressPDF } from "@fileslim/compress";
+  <footer>PDF Workbench • V1.2 • Tidak mengunggah file pengguna ke server.</footer>
+</div>
 
-    /*
-     * ============================================================
-     * PDF WORKBENCH V1
-     * Compression engine:
-     * @fileslim/compress 2.3.0
-     * ============================================================
-     */
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@9.7.1/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
 
-    const MAX_FILE_SIZE = 200 * 1024 * 1024;
+<script type="module">
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.worker.min.mjs";
 
-    const MODES = {
-      low: {
-        mode: "low",
-        imageQuality: 0.85,
-        maxImageDimension: 2000
-      },
+const { PDFDocument } = PDFLib;
+const $ = id => document.getElementById(id);
+const state = {
+  tool:"compress", files:[], cancelled:false, worker:null, outputs:[],
+  mode:"balanced"
+};
+const LIMIT = 50 * 1024 * 1024;
+const OCR_PAGE_LIMIT = 30;
+const SPLIT_OUTPUT_LIMIT = 30;
 
-      balanced: {
-        mode: "balanced",
-        imageQuality: 0.70,
-        maxImageDimension: 1600
-      },
+const CONFIG = {
+  compress:{
+    light:{quality:.82,scale:1.35,label:"Light",desc:"Kualitas tinggi • lebih besar"},
+    balanced:{quality:.68,scale:1.15,label:"Balanced ★",desc:"Seimbang • rekomendasi"},
+    strong:{quality:.52,scale:.95,label:"Strong",desc:"Lebih kecil • kualitas turun lebih terasa"}
+  }
+};
 
-      high: {
-        mode: "high",
-        imageQuality: 0.50,
-        maxImageDimension: 1200
-      }
-    };
+function fmtBytes(n){
+  if(!Number.isFinite(n)) return "-";
+  const u=["B","KB","MB","GB"]; let i=0;
+  while(n>=1024&&i<u.length-1){n/=1024;i++}
+  return `${n.toFixed(i?1:0)} ${u[i]}`;
+}
+function safeBase(name){
+  return (name||"document.pdf").replace(/\.pdf$/i,"").replace(/[\\/:*?"<>|]+/g,"-").trim()||"document";
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function setProgress(p,text){
+  const pct=Math.max(0,Math.min(100,Math.round(p)));
+  $("progressWrap").classList.add("show");
+  $("progressBar").style.width=pct+"%"; $("progressPct").textContent=pct+"%"; $("progressText").textContent=text||"Memproses...";
+}
+function setStatus(msg,type=""){
+  const el=$("status"); el.textContent=msg; el.className="status show "+type;
+}
+function clearStatus(){ $("status").className="status"; $("status").textContent="" }
+function failMessage(err){
+  const s=String(err?.message||err||"");
+  if(/password|encrypted|encryptedpdf|passwordexception/i.test(s))
+    return "PDF ini terkunci password/enkripsi. PDF Workbench belum mendukung PDF terkunci.";
+  if(/Invalid PDF|InvalidPDF|Missing PDF|format/i.test(s))
+    return "File tidak dapat dibaca sebagai PDF yang valid.";
+  return s || "Terjadi kesalahan saat memproses PDF.";
+}
+function resetProgress(){ $("progressWrap").classList.remove("show"); $("progressBar").style.width="0%"; $("progressPct").textContent="0%"; }
+function clearOutputs(){
+  state.outputs.forEach(o=>{try{URL.revokeObjectURL(o.url)}catch{}});
+  state.outputs=[]; $("output").innerHTML="";
+}
+function addOutput(blob,name,meta=""){
+  const url=URL.createObjectURL(blob); state.outputs.push({url});
+  const row=document.createElement("div"); row.className="out";
+  row.innerHTML=`<span>📦</span><div class="grow"><b title="${escapeHtml(name)}">${escapeHtml(name)}</b><small>${escapeHtml(meta||fmtBytes(blob.size))}</small></div><a class="primary" style="text-decoration:none;padding:9px 12px" href="${url}" download="${escapeAttr(name)}">Download</a>`;
+  $("output").appendChild(row);
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function escapeAttr(s){return escapeHtml(s).replace(/`/g,"&#96;")}
 
-    let selectedFile = null;
-    let compressedBlob = null;
-    let compressedFilename = "";
-    let selectedMode = "balanced";
+function renderOptions(){
+  const el=$("options");
+  let html="";
+  if(state.tool==="compress"){
+    html=`<div class="modes">
+      ${Object.entries(CONFIG.compress).map(([k,v])=>`<button class="mode ${state.mode===k?"active":""}" data-mode="${k}"><b>${v.label}</b><small>${v.desc}</small></button>`).join("")}
+    </div>`;
+  } else if(state.tool==="split"){
+    html=`<div class="row"><div class="field"><label>Rentang halaman</label><input id="ranges" placeholder="Contoh: 1-3,5,8-10"><span class="hint">Setiap bagian dipisah koma jadi 1 file terpisah (mis. "1-3,5" = 2 file: satu berisi halaman 1-3, satu berisi halaman 5). Kosongkan untuk 1 file berisi semua halaman.</span></div><div class="field"><label>Batas hasil</label><input value="Maks ${SPLIT_OUTPUT_LIMIT} file per proses" disabled></div></div>`;
+  } else if(state.tool==="ocr"){
+    html=`<div class="row"><div class="field"><label>Bahasa OCR</label><select id="ocrLang"><option value="ind">Indonesia (disarankan)</option><option value="eng">English</option><option value="ind+eng">Indonesia + English</option></select></div><div class="field"><label>Batas aman</label><input value="${OCR_PAGE_LIMIT} halaman" disabled></div></div>`;
+  } else if(state.tool==="word" || state.tool==="excel"){
+    html=`<div class="notice">Untuk PDF hasil scan/foto, gunakan <b>OCR / Ambil Teks</b> terlebih dahulu. Converter Word/Excel bekerja paling baik pada PDF yang memiliki text layer.</div>`;
+  }
+  el.innerHTML=html;
+  el.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;renderOptions()});
+}
 
-    const fileInput = document.getElementById("fileInput");
-    const dropzone = document.getElementById("dropzone");
+function setTool(tool){
+  state.tool=tool; clearOutputs(); clearStatus(); resetProgress();
+  document.querySelectorAll(".tool").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));
+  const meta={
+    compress:["Compress PDF","Kurangi ukuran file sambil menjaga kualitas dokumen tetap nyaman dibaca."],
+    merge:["Gabungkan PDF","Satukan beberapa PDF menjadi satu dokumen dalam urutan file yang kamu pilih."],
+    split:["Pisahkan PDF","Setiap rentang yang dipisah koma akan menjadi satu file PDF terpisah."],
+    word:["PDF → Word","Ekstrak text layer PDF menjadi dokumen Word yang dapat diedit."],
+    excel:["PDF → Excel","Ekstrak teks PDF menjadi spreadsheet. Baris dipisahkan menjadi data yang mudah diedit."],
+    ocr:["OCR / Ambil Teks","Baca teks dari PDF scan/gambar menggunakan OCR Indonesia."]
+  }[tool];
+  $("titleBlock").innerHTML=`<h2>${meta[0]}</h2><p class="sub">${meta[1]}</p>`;
+  $("dropHint").textContent=tool==="merge"?"Maksimal 50 MB per file • pilih beberapa PDF sekaligus.":"Maksimal 50 MB per file • hanya PDF.";
+  renderOptions(); renderFiles();
+}
+document.querySelectorAll(".tool").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 
-    const filePanel = document.getElementById("filePanel");
-    const fileName = document.getElementById("fileName");
-    const fileSize = document.getElementById("fileSize");
+$("pick").onclick=()=> $("fileInput").click();
+$("fileInput").addEventListener("change",e=>addFiles([...e.target.files]));
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag")}));
+drop.addEventListener("drop",e=>addFiles([...e.dataTransfer.files]));
 
-    const removeButton = document.getElementById("removeButton");
-    const processButton = document.getElementById("processButton");
+function addFiles(list){
+  const pdfs=list.filter(f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name));
+  const rejected=list.filter(f=>!(f.type==="application/pdf"||/\.pdf$/i.test(f.name)) || f.size>LIMIT);
+  if(rejected.length) setStatus(`Ada file yang ditolak. Pastikan format PDF dan ukuran maksimal ${fmtBytes(LIMIT)} per file.`,"warn");
+  const valid=pdfs.filter(f=>f.size<=LIMIT);
+  if(state.tool!=="merge") state.files=valid.slice(0,1); else state.files=valid;
+  renderFiles(); clearOutputs(); resetProgress();
+}
+function renderFiles(){
+  $("files").innerHTML="";
+  state.files.forEach((f,i)=>{
+    const row=document.createElement("div");row.className="file";
+    row.innerHTML=`<span>📄</span><div class="name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div><small>${fmtBytes(f.size)}</small><button class="secondary" data-remove="${i}">×</button>`;
+    $("files").appendChild(row);
+  });
+  $("files").querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{state.files.splice(+b.dataset.remove,1);renderFiles()});
+}
 
-    const progressPanel = document.getElementById("progressPanel");
-    const progressTitle = document.getElementById("progressTitle");
-    const progressPercent = document.getElementById("progressPercent");
-    const progressFill = document.getElementById("progressFill");
-    const progressMessage = document.getElementById("progressMessage");
+$("clear").onclick=()=>{
+  cancelJob(true); state.files=[]; clearOutputs(); clearStatus(); resetProgress(); $("fileInput").value=""; renderFiles();
+};
+function cancelJob(silent=false){
+  state.cancelled=true;
+  if(state.worker){try{state.worker.terminate()}catch{} state.worker=null}
+  $("cancel").disabled=true;
+  if(!silent) setStatus("Proses dibatalkan.","warn");
+}
+$("cancel").onclick=()=>cancelJob(false);
 
-    const result = document.getElementById("result");
-    const originalSize = document.getElementById("originalSize");
-    const compressedSize = document.getElementById("compressedSize");
-    const savings = document.getElementById("savings");
+function ensureFiles(n=1){
+  if(state.files.length<n) throw new Error(n===1?"Pilih satu file PDF terlebih dahulu.":"Pilih minimal dua file PDF.");
+}
 
-    const downloadButton = document.getElementById("downloadButton");
+async function loadPdf(file){
+  const buf=await file.arrayBuffer();
+  try{
+    return await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+  }catch(e){throw new Error(failMessage(e))}
+}
+async function loadPdfLib(file){
+  try{
+    return await PDFDocument.load(await file.arrayBuffer(),{ignoreEncryption:false,updateMetadata:false});
+  }catch(e){throw new Error(failMessage(e))}
+}
 
-    const notice = document.getElementById("notice");
+// Parses a comma-separated ranges string into GROUPS of page numbers.
+// Each comma-separated part becomes its own group/output file.
+// e.g. "1-3,5,8-10" with max=12 -> [[1,2,3],[5],[8,9,10]]
+// Empty input -> a single group containing every page (one output file).
+function parseGroups(input,max){
+  if(!input.trim()) return [Array.from({length:max},(_,i)=>i+1)];
+  const groups=[];
+  for(const part of input.split(",")){
+    const p=part.trim(); if(!p) continue;
+    const m=p.match(/^(\d+)\s*-\s*(\d+)$/);
+    if(m){
+      let a=Number(m[1]),b=Number(m[2]); if(a>b)[a,b]=[b,a];
+      if(a<1||b>max) throw new Error(`Rentang ${p} berada di luar halaman PDF (${max} halaman).`);
+      const arr=[]; for(let i=a;i<=b;i++) arr.push(i);
+      groups.push(arr);
+    }else if(/^\d+$/.test(p)){
+      const n=Number(p); if(n<1||n>max)throw new Error(`Halaman ${n} tidak tersedia. PDF hanya memiliki ${max} halaman.`);
+      groups.push([n]);
+    }else throw new Error(`Format rentang "${p}" tidak valid. Contoh yang benar: 1-3,5,8-10`);
+  }
+  if(!groups.length) throw new Error("Masukkan rentang halaman yang valid, atau kosongkan untuk semua halaman.");
+  return groups;
+}
 
-    const modeButtons = document.querySelectorAll(".mode");
+async function renderPage(pdf,pageNo,scale=1.15,quality=.68){
+  const page=await pdf.getPage(pageNo);
+  const viewport=page.getViewport({scale});
+  const maxPx=1900;
+  const ratio=Math.min(1,maxPx/Math.max(viewport.width,viewport.height));
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1,Math.round(viewport.width*ratio));
+  canvas.height=Math.max(1,Math.round(viewport.height*ratio));
+  const ctx=canvas.getContext("2d",{alpha:false});
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+  const renderViewport=page.getViewport({scale:scale*ratio});
+  await page.render({canvasContext:ctx,viewport:renderViewport}).promise;
+  const blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",quality));
+  page.cleanup();
+  return {blob,width:canvas.width,height:canvas.height};
+}
 
-    function formatBytes(bytes) {
-      if (!Number.isFinite(bytes) || bytes <= 0) {
-        return "0 B";
-      }
+async function compressPdf(file){
+  const pdf=await loadPdf(file), out=await PDFDocument.create();
+  const cfg=CONFIG.compress[state.mode];
+  if(pdf.numPages>60) setStatus("PDF cukup panjang. Proses kompresi berbasis gambar dapat memakai banyak memori di HP.","warn");
+  for(let i=1;i<=pdf.numPages;i++){
+    if(state.cancelled) throw new Error("CANCELLED");
+    setProgress((i-1)/pdf.numPages*100,`Mengompres halaman ${i} dari ${pdf.numPages}...`);
+    const img=await renderPage(pdf,i,cfg.scale,cfg.quality);
+    const jpg=await out.embedJpg(await img.blob.arrayBuffer());
+    const page=out.addPage([img.width,img.height]);
+    page.drawImage(jpg,{x:0,y:0,width:img.width,height:img.height});
+    await sleep(0);
+  }
+  const bytes=await out.save({useObjectStreams:true,addDefaultPage:false});
+  setProgress(100,"Kompresi selesai.");
+  return new Blob([bytes],{type:"application/pdf"});
+}
 
-      const units = ["B", "KB", "MB", "GB"];
-      const index = Math.min(
-        Math.floor(Math.log(bytes) / Math.log(1024)),
-        units.length - 1
-      );
+async function mergePdfs(files){
+  const out=await PDFDocument.create();
+  for(let i=0;i<files.length;i++){
+    if(state.cancelled)throw new Error("CANCELLED");
+    setProgress(i/files.length*100,`Membaca file ${i+1} dari ${files.length}...`);
+    const src=await loadPdfLib(files[i]);
+    const pages=await out.copyPages(src,src.getPageIndices());
+    pages.forEach(p=>out.addPage(p));
+  }
+  const bytes=await out.save({useObjectStreams:true});
+  setProgress(100,"Penggabungan selesai.");
+  return new Blob([bytes],{type:"application/pdf"});
+}
 
-      const value = bytes / Math.pow(1024, index);
+// Split: each comma-separated range becomes ONE combined output file
+// (a range like 1-3 stays together in a single PDF instead of being
+// exploded into one file per page).
+async function splitPdf(file){
+  const totalPages=(await loadPdf(file)).numPages;
+  const groups=parseGroups($("ranges")?.value||"",totalPages);
+  if(groups.length>SPLIT_OUTPUT_LIMIT)
+    throw new Error(`Permintaan ini menghasilkan ${groups.length} file terpisah, melebihi batas ${SPLIT_OUTPUT_LIMIT} file sekali proses. Kurangi jumlah rentang yang dipisah koma.`);
+  const src=await loadPdfLib(file), results=[];
+  for(let i=0;i<groups.length;i++){
+    if(state.cancelled)throw new Error("CANCELLED");
+    const group=groups[i];
+    const out=await PDFDocument.create();
+    const pages=await out.copyPages(src,group.map(n=>n-1));
+    pages.forEach(p=>out.addPage(p));
+    const bytes=await out.save({useObjectStreams:true});
+    const label=group.length===1?`halaman-${group[0]}`:`halaman-${group[0]}-${group[group.length-1]}`;
+    results.push({blob:new Blob([bytes],{type:"application/pdf"}),name:`${safeBase(file.name)}-${label}.pdf`});
+    setProgress((i+1)/groups.length*100,`Membuat bagian ${i+1} dari ${groups.length}...`);
+  }
+  return results;
+}
 
-      return `${value.toFixed(value >= 10 || index === 0 ? 0 : 2)} ${units[index]}`;
+async function extractText(file,onPage){
+  const pdf=await loadPdf(file), pages=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    if(state.cancelled)throw new Error("CANCELLED");
+    const page=await pdf.getPage(i), content=await page.getTextContent();
+    const items=content.items||[];
+    let text="", lastY=null;
+    for(const item of items){
+      const y=item.transform?.[5] ?? null;
+      if(lastY!==null && y!==null && Math.abs(y-lastY)>4) text+="\n";
+      text+=item.str||"";
+      if(item.hasEOL) text+="\n"; else text+=" ";
+      lastY=y;
     }
-
-    function showNotice(message, type = "error") {
-      notice.textContent = message;
-      notice.className = `notice visible ${type}`;
-    }
-
-    function hideNotice() {
-      notice.textContent = "";
-      notice.className = "notice";
-    }
-
-    function setProgress(percent, title, message) {
-      const safePercent = Math.max(
-        0,
-        Math.min(100, Number(percent) || 0)
-      );
-
-      progressPanel.classList.add("visible");
-
-      progressTitle.textContent = title || "Memproses...";
-      progressPercent.textContent = `${Math.round(safePercent)}%`;
-      progressFill.style.width = `${safePercent}%`;
-      progressMessage.textContent = message || "Memproses PDF...";
-    }
-
-    function resetProgress() {
-      progressPanel.classList.remove("visible");
-      progressFill.style.width = "0%";
-      progressPercent.textContent = "0%";
-      progressTitle.textContent = "Menyiapkan...";
-      progressMessage.textContent = "Menyiapkan file...";
-    }
-
-    function resetResult() {
-      result.classList.remove("visible");
-
-      compressedBlob = null;
-      compressedFilename = "";
-
-      originalSize.textContent = "-";
-      compressedSize.textContent = "-";
-      savings.textContent = "-";
-    }
-
-    function resetFile() {
-      selectedFile = null;
-
-      fileInput.value = "";
-
-      filePanel.classList.remove("visible");
-
-      fileName.textContent = "-";
-      fileSize.textContent = "-";
-
-      processButton.disabled = true;
-
-      resetProgress();
-      resetResult();
-      hideNotice();
-    }
-
-    function isPdf(file) {
-      if (!file) return false;
-
-      const name = file.name.toLowerCase();
-
-      return (
-        file.type === "application/pdf" ||
-        name.endsWith(".pdf")
-      );
-    }
-
-    async function verifyPdfSignature(file) {
-      const header = await file.slice(0, 5).arrayBuffer();
-
-      const bytes = new Uint8Array(header);
-
-      const signature = String.fromCharCode(...bytes);
-
-      return signature === "%PDF-";
-    }
-
-    async function selectFile(file) {
-      hideNotice();
-      resetResult();
-      resetProgress();
-
-      if (!file) {
-        return;
-      }
-
-      if (!isPdf(file)) {
-        resetFile();
-
-        showNotice(
-          "File ditolak. PDF Workbench hanya menerima file PDF.",
-          "error"
-        );
-
-        return;
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        resetFile();
-
-        showNotice(
-          "File terlalu besar untuk V1. Maksimum 200 MB.",
-          "error"
-        );
-
-        return;
-      }
-
-      try {
-        const validSignature = await verifyPdfSignature(file);
-
-        if (!validSignature) {
-          resetFile();
-
-          showNotice(
-            "File memiliki ekstensi PDF tetapi struktur file tidak dikenali sebagai PDF.",
-            "error"
-          );
-
-          return;
-        }
-      } catch (error) {
-        resetFile();
-
-        showNotice(
-          "File PDF tidak dapat diperiksa. Silakan coba file lain.",
-          "error"
-        );
-
-        return;
-      }
-
-      selectedFile = file;
-
-      fileName.textContent = file.name;
-      fileSize.textContent = formatBytes(file.size);
-
-      filePanel.classList.add("visible");
-
-      processButton.disabled = false;
-    }
-
-    function setMode(mode) {
-      if (!MODES[mode]) return;
-
-      selectedMode = mode;
-
-      modeButtons.forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.mode === mode
-        );
-      });
-
-      resetResult();
-      hideNotice();
-    }
-
-    async function processPdf() {
-      if (!selectedFile) {
-        showNotice(
-          "Pilih file PDF terlebih dahulu.",
-          "warning"
-        );
-
-        return;
-      }
-
-      processButton.disabled = true;
-
-      removeButton.disabled = true;
-
-      modeButtons.forEach((button) => {
-        button.disabled = true;
-      });
-
-      resetResult();
-      hideNotice();
-
-      const settings = MODES[selectedMode];
-
-      setProgress(
-        1,
-        "Menyiapkan PDF",
-        "Membaca file..."
-      );
-
-      const startTime = performance.now();
-
-      try {
-        const resultData = await compressPDF(
-          selectedFile,
-          {
-            mode: settings.mode,
-            imageQuality: settings.imageQuality,
-            maxImageDimension: settings.maxImageDimension,
-            stripMetadata: true,
-
-            onProgress: (phase, percent) => {
-              let title = "Memproses PDF";
-              let message = "Mengoptimalkan dokumen...";
-
-              if (typeof phase === "string") {
-                const normalized = phase.toLowerCase();
-
-                if (normalized.includes("extract")) {
-                  title = "Menganalisis PDF";
-                  message = "Mencari gambar yang bisa dioptimalkan...";
-                }
-
-                if (normalized.includes("compress")) {
-                  title = "Mengompres";
-                  message = "Mengurangi ukuran gambar...";
-                }
-
-                if (normalized.includes("save")) {
-                  title = "Menyimpan hasil";
-                  message = "Menyelesaikan PDF...";
-                }
-              }
-
-              setProgress(
-                percent,
-                title,
-                message
-              );
-            }
-          }
-        );
-
-        if (
-          !resultData ||
-          !resultData.blob
-        ) {
-          throw new Error(
-            "Engine tidak menghasilkan file PDF."
-          );
-        }
-
-        const finalBlob = resultData.blob;
-
-        const finalSize = finalBlob.size;
-
-        const original = selectedFile.size;
-
-        const savedBytes = original - finalSize;
-
-        const savedPercent =
-          original > 0
-            ? (savedBytes / original) * 100
-            : 0;
-
-        const elapsed =
-          performance.now() - startTime;
-
-        setProgress(
-          100,
-          "Selesai",
-          `Diproses dalam ${(elapsed / 1000).toFixed(1)} detik.`
-        );
-
-        /*
-         * SAFETY RULE:
-         * Jangan pernah memberikan file yang lebih besar
-         * daripada file original.
-         */
-
-        if (finalSize >= original) {
-          compressedBlob = selectedFile;
-          compressedFilename =
-            selectedFile.name.replace(
-              /\.pdf$/i,
-              "_optimized.pdf"
-            );
-
-          originalSize.textContent =
-            formatBytes(original);
-
-          compressedSize.textContent =
-            formatBytes(original);
-
-          savings.textContent =
-            "Ukuran sudah optimal — file asli dipertahankan.";
-
-          result.classList.add("visible");
-
-          showNotice(
-            "PDF sudah cukup optimal. Hasil kompresi tidak lebih kecil, jadi PDF asli dipertahankan agar tidak menjadi lebih besar.",
-            "warning"
-          );
-
-          return;
-        }
-
-        compressedBlob = finalBlob;
-
-        compressedFilename =
-          resultData.filename ||
-          selectedFile.name.replace(
-            /\.pdf$/i,
-            "_compressed.pdf"
-          );
-
-        originalSize.textContent =
-          formatBytes(original);
-
-        compressedSize.textContent =
-          formatBytes(finalSize);
-
-        savings.textContent =
-          `${savedPercent.toFixed(1)}% lebih kecil · Hemat ${formatBytes(savedBytes)}`;
-
-        result.classList.add("visible");
-
-        showNotice(
-          "PDF berhasil dikompres dan hasilnya lebih kecil dari file asli.",
-          "success"
-        );
-
-      } catch (error) {
-        console.error(
-          "PDF compression error:",
-          error
-        );
-
-        resetProgress();
-
-        let message =
-          "PDF gagal diproses. Silakan coba file PDF lain.";
-
-        if (
-          error &&
-          typeof error.message === "string" &&
-          error.message.length > 0
-        ) {
-          message =
-            `PDF tidak dapat diproses: ${error.message}`;
-        }
-
-        showNotice(
-          message,
-          "error"
-        );
-
-      } finally {
-        processButton.disabled =
-          !selectedFile;
-
-        removeButton.disabled = false;
-
-        modeButtons.forEach((button) => {
-          button.disabled = false;
-        });
-      }
-    }
-
-    function downloadResult() {
-      if (!compressedBlob) {
-        showNotice(
-          "Belum ada hasil PDF untuk di-download.",
-          "warning"
-        );
-
-        return;
-      }
-
-      const url =
-        URL.createObjectURL(
-          compressedBlob
-        );
-
-      const link =
-        document.createElement("a");
-
-      link.href = url;
-      link.download =
-        compressedFilename ||
-        "pdf-workbench-result.pdf";
-
-      document.body.appendChild(link);
-
-      link.click();
-
-      link.remove();
-
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 1000);
-    }
-
-    /* File picker */
-
-    fileInput.addEventListener(
-      "change",
-      (event) => {
-        const file =
-          event.target.files?.[0];
-
-        selectFile(file);
-      }
-    );
-
-    /* Remove */
-
-    removeButton.addEventListener(
-      "click",
-      () => {
-        resetFile();
-      }
-    );
-
-    /* Process */
-
-    processButton.addEventListener(
-      "click",
-      processPdf
-    );
-
-    /* Download */
-
-    downloadButton.addEventListener(
-      "click",
-      downloadResult
-    );
-
-    /* Mode */
-
-    modeButtons.forEach((button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          setMode(
-            button.dataset.mode
-          );
-        }
-      );
+    pages.push(text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim());
+    page.cleanup();
+    onPage?.(i,pdf.numPages);
+  }
+  return pages;
+}
+
+async function pdfToWord(file){
+  const pages=await extractText(file,(i,n)=>setProgress((i-1)/n*100,`Mengekstrak teks halaman ${i} dari ${n}...`));
+  const children=[];
+  pages.forEach((text,i)=>{
+    if(i) children.push(new docx.Paragraph({children:[new docx.TextRun({text:`Halaman ${i+1}`,bold:true})],pageBreakBefore:true}));
+    const lines=(text||"[Tidak ada text layer pada halaman ini]").split(/\n/);
+    lines.forEach(line=>children.push(new docx.Paragraph({children:[new docx.TextRun({text:line})]})));
+  });
+  const document=new docx.Document({sections:[{properties:{},children}]});
+  const blob=await docx.Packer.toBlob(document);
+  setProgress(100,"Dokumen Word selesai.");
+  return blob;
+}
+
+function lineToCells(line){
+  const cleaned=line.replace(/\u00a0/g," ").trim();
+  if(!cleaned)return [""];
+  if(/\t/.test(cleaned))return cleaned.split(/\t+/).map(s=>s.trim());
+  const cells=cleaned.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
+  return cells.length?cells:[cleaned];
+}
+async function pdfToExcel(file){
+  const pages=await extractText(file,(i,n)=>setProgress((i-1)/n*100,`Mengekstrak data halaman ${i} dari ${n}...`));
+  const rows=[["Halaman","Data"]];
+  pages.forEach((text,pi)=>{
+    (text||"").split(/\n/).forEach(line=>{
+      const cells=lineToCells(line);
+      rows.push([pi+1,...cells]);
     });
+  });
+  const wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,"PDF Data");
+  const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  setProgress(100,"Spreadsheet selesai.");
+  return new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
 
-    /* Drag & Drop */
+async function ocrPdf(file){
+  const pdf=await loadPdf(file);
+  if(pdf.numPages>OCR_PAGE_LIMIT) throw new Error(`PDF memiliki ${pdf.numPages} halaman. OCR dibatasi ${OCR_PAGE_LIMIT} halaman agar browser mobile tetap stabil.`);
+  const lang=$("ocrLang")?.value||"ind";
+  let currentPage=1;
+  state.worker=await Tesseract.createWorker(lang,1,{
+    logger:m=>{
+      if(state.cancelled)return;
+      const inner=typeof m.progress==="number"?m.progress:0;
+      setProgress(((currentPage-1)+inner)/pdf.numPages*100,`OCR halaman ${currentPage} dari ${pdf.numPages} • ${m.status||"memproses"}...`);
+    }
+  });
+  let all=[];
+  try{
+    for(let i=1;i<=pdf.numPages;i++){
+      if(state.cancelled)throw new Error("CANCELLED");
+      currentPage=i;
+      const rendered=await renderPage(pdf,i,1.55,.9);
+      const result=await state.worker.recognize(await rendered.blob.arrayBuffer());
+      all.push(`===== HALAMAN ${i} =====\n${result.data.text.trim()}`);
+      setProgress(i/pdf.numPages*100,`OCR halaman ${i} dari ${pdf.numPages} selesai.`);
+      await sleep(0);
+    }
+  } finally {
+    if(state.worker){try{await state.worker.terminate()}catch{} state.worker=null}
+  }
+  return new Blob([all.join("\n\n")],{type:"text/plain;charset=utf-8"});
+}
 
-    [
-      "dragenter",
-      "dragover"
-    ].forEach((eventName) => {
-      dropzone.addEventListener(
-        eventName,
-        (event) => {
-          event.preventDefault();
-          event.stopPropagation();
+async function process(){
+  state.cancelled=false; $("cancel").disabled=false; clearOutputs(); clearStatus();
+  try{
+    if(state.tool==="merge")ensureFiles(2); else ensureFiles(1);
+    const file=state.files[0];
+    if(state.tool==="compress"){
+      const blob=await compressPdf(file); addOutput(blob,`${safeBase(file.name)}-compressed.pdf`,`Hasil kompresi • ${fmtBytes(blob.size)}`);
+    } else if(state.tool==="merge"){
+      const blob=await mergePdfs(state.files); addOutput(blob,`${safeBase(state.files[0].name)}-merged.pdf`,`Gabungan ${state.files.length} file • ${fmtBytes(blob.size)}`);
+    } else if(state.tool==="split"){
+      const results=await splitPdf(file); results.forEach(r=>addOutput(r.blob,r.name));
+    } else if(state.tool==="word"){
+      const blob=await pdfToWord(file); addOutput(blob,`${safeBase(file.name)}.docx`,`Word • ${fmtBytes(blob.size)}`);
+    } else if(state.tool==="excel"){
+      const blob=await pdfToExcel(file); addOutput(blob,`${safeBase(file.name)}.xlsx`,`Excel • ${fmtBytes(blob.size)}`);
+    } else if(state.tool==="ocr"){
+      const blob=await ocrPdf(file); addOutput(blob,`${safeBase(file.name)}-ocr.txt`,`OCR • ${fmtBytes(blob.size)}`);
+    }
+    setStatus("Selesai. Hasil tersedia di bawah.","good");
+  }catch(e){
+    if(String(e?.message)==="CANCELLED" || state.cancelled){setStatus("Proses dibatalkan. Tidak ada file hasil yang dibuat.","warn")}
+    else {console.error(e);setStatus(failMessage(e),"err")}
+  }finally{
+    $("cancel").disabled=true; state.cancelled=false; state.worker=null;
+  }
+}
+$("process").onclick=process;
 
-          dropzone.classList.add(
-            "dragover"
-          );
-        }
-      );
-    });
-
-    [
-      "dragleave",
-      "drop"
-    ].forEach((eventName) => {
-      dropzone.addEventListener(
-        eventName,
-        (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-
-          dropzone.classList.remove(
-            "dragover"
-          );
-        }
-      );
-    });
-
-    dropzone.addEventListener(
-      "drop",
-      (event) => {
-        const file =
-          event.dataTransfer?.files?.[0];
-
-        selectFile(file);
-      }
-    );
-
-    /*
-     * Prevent accidental page navigation when
-     * dropping a PDF outside the dropzone.
-     */
-
-    window.addEventListener(
-      "dragover",
-      (event) => {
-        event.preventDefault();
-      }
-    );
-
-    window.addEventListener(
-      "drop",
-      (event) => {
-        if (!dropzone.contains(event.target)) {
-          event.preventDefault();
-        }
-      }
-    );
-  </script>
+renderOptions(); renderFiles();
+</script>
 </body>
 </html>

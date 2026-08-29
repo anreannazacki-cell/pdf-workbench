@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V1.2</title>
+<title>PDF Workbench — V1.3</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -59,7 +59,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V1.2 • Browser-first</div>
+    <div class="badge">V1.3 • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -102,12 +102,11 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V1.2 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V1.3 • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@9.7.1/dist/index.iife.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
 
 <script type="module">
@@ -116,6 +115,20 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dis
 
 const { PDFDocument } = PDFLib;
 const $ = id => document.getElementById(id);
+
+// docx@9.x tidak lagi reliable membuat variabel global lewat <script> UMD biasa,
+// jadi kita muat sebagai ES module lewat endpoint +esm milik jsDelivr (sama
+// prinsipnya dengan cara pdfjs-dist dimuat di atas).
+let docxLib = null;
+async function getDocx(){
+  if(docxLib) return docxLib;
+  try{
+    docxLib = await import("https://cdn.jsdelivr.net/npm/docx@9.7.1/+esm");
+    return docxLib;
+  }catch(e){
+    throw new Error("Engine Word gagal dimuat. Periksa koneksi internet lalu coba lagi.");
+  }
+}
 const state = {
   tool:"compress", files:[], cancelled:false, worker:null, outputs:[],
   mode:"balanced"
@@ -378,6 +391,7 @@ async function extractText(file,onPage){
 }
 
 async function pdfToWord(file){
+  const docx=await getDocx();
   const pages=await extractText(file,(i,n)=>setProgress((i-1)/n*100,`Mengekstrak teks halaman ${i} dari ${n}...`));
   const children=[];
   pages.forEach((text,i)=>{

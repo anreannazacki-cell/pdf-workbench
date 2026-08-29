@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V1.4</title>
+<title>PDF Workbench — V1.5</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -59,7 +59,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V1.4 • Browser-first</div>
+    <div class="badge">V1.5 • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -102,7 +102,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V1.4 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V1.5 • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -378,12 +378,17 @@ async function extractText(file,onPage){
     let text="", lastY=null;
     for(const item of items){
       const y=item.transform?.[5] ?? null;
-      if(lastY!==null && y!==null && Math.abs(y-lastY)>4) text+="\n";
+      const isNewLine=lastY!==null && y!==null && Math.abs(y-lastY)>4;
+      if(isNewLine && text && !text.endsWith("\n")) text+="\n";
       text+=item.str||"";
-      if(item.hasEOL) text+="\n"; else text+=" ";
+      if(item.hasEOL){
+        if(!text.endsWith("\n")) text+="\n";
+      } else {
+        text+=" ";
+      }
       lastY=y;
     }
-    pages.push(text.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim());
+    pages.push(text.replace(/[ \t]+\n/g,"\n").replace(/\n{2,}/g,"\n").trim());
     page.cleanup();
     onPage?.(i,pdf.numPages);
   }
@@ -412,141 +417,23 @@ function lineToCells(line){
   const cells=cleaned.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
   return cells.length?cells:[cleaned];
 }
-async async function pdfToExcel(file){
-  const pdf=await loadPdf(file);
-  const rows=[["Halaman","Data"]];
-
-  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
-    if(state.cancelled) throw new Error("CANCELLED");
-
-    setProgress(
-      (pageNo-1)/pdf.numPages*100,
-      `Membaca layout halaman ${pageNo} dari ${pdf.numPages}...`
-    );
-
-    const page=await pdf.getPage(pageNo);
-    const content=await page.getTextContent();
-    const items=(content.items||[])
-      .filter(item=>String(item.str||"").trim());
-
-    // Ambil posisi teks dari PDF
-    const words=items.map(item=>{
-      const x=item.transform?.[4] ?? 0;
-      const y=item.transform?.[5] ?? 0;
-
-      return {
-        text:String(item.str||"").trim(),
-        x,
-        y,
-        width:Number(item.width||0)
-      };
+async function pdfToExcel(file){
+  const pages=await extractText(file,(i,n)=>setProgress((i-1)/n*100,`Mengekstrak data halaman ${i} dari ${n}...`));
+  const rows=[["Halaman","Teks"]];
+  pages.forEach((text,pi)=>{
+    const lines=(text||"").split(/\n/).map(l=>l.trim()).filter(Boolean);
+    if(!lines.length){ rows.push([pi+1,"[Tidak ada text layer pada halaman ini]"]); return; }
+    lines.forEach(line=>{
+      const cells=lineToCells(line);
+      rows.push([pi+1,...cells]);
     });
-
-    // Kelompokkan teks berdasarkan posisi Y.
-    // Toleransi dibuat cukup kecil agar baris berbeda
-    // tidak tercampur.
-    const Y_TOLERANCE=4;
-    const lines=[];
-
-    words
-      .sort((a,b)=>{
-        if(Math.abs(b.y-a.y)>Y_TOLERANCE) return b.y-a.y;
-        return a.x-b.x;
-      })
-      .forEach(word=>{
-        let line=lines.find(l=>Math.abs(l.y-word.y)<=Y_TOLERANCE);
-
-        if(!line){
-          line={
-            y:word.y,
-            items:[]
-          };
-          lines.push(line);
-        }
-
-        line.items.push(word);
-      });
-
-    // Urutkan baris dari atas ke bawah
-    lines.sort((a,b)=>b.y-a.y);
-
-    for(const line of lines){
-      // Urutkan teks dari kiri ke kanan
-      line.items.sort((a,b)=>a.x-b.x);
-
-      const cells=[];
-      let current="";
-      let currentEnd=null;
-
-      for(const item of line.items){
-        const gap=currentEnd===null ? 0 : item.x-currentEnd;
-
-        /*
-         * Kalau jarak antar teks cukup besar,
-         * anggap sebagai kolom Excel baru.
-         *
-         * Kalau dekat, gabungkan sebagai teks yang sama.
-         */
-        if(current && gap>18){
-          cells.push(current.trim());
-          current="";
-        }
-
-        if(current){
-          current+=" ";
-        }
-
-        current+=item.text;
-        currentEnd=Math.max(
-          currentEnd===null ? 0 : currentEnd,
-          item.x+item.width
-        );
-      }
-
-      if(current.trim()){
-        cells.push(current.trim());
-      }
-
-      if(cells.length){
-        rows.push([pageNo,...cells]);
-      }
-    }
-
-    page.cleanup();
-    setProgress(
-      pageNo/pdf.numPages*100,
-      `Layout halaman ${pageNo} dari ${pdf.numPages} selesai.`
-    );
-
-    await sleep(0);
-  }
-
-  // Buat workbook Excel
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-
-  // Sedikit perapihan tampilan
-  ws["!cols"]=[
-    {wch:10},
-    {wch:28},
-    {wch:28},
-    {wch:28},
-    {wch:28},
-    {wch:28}
-  ];
-
+  });
+  const wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"]=[{wch:10},{wch:90},{wch:40},{wch:40}];
   XLSX.utils.book_append_sheet(wb,ws,"PDF Data");
-
-  const out=XLSX.write(wb,{
-    bookType:"xlsx",
-    type:"array"
-  });
-
+  const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
   setProgress(100,"Spreadsheet selesai.");
-
-  return new Blob([out],{
-    type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  });
+  return new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
 }
 
 async function ocrPdf(file){

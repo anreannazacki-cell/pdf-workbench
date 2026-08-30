@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V1.6</title>
+<title>PDF Workbench — V1.7</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -59,7 +59,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V1.6 • Browser-first</div>
+    <div class="badge">V1.7 • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -102,7 +102,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V1.6 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V1.7 • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -373,7 +373,7 @@ async function extractText(file,onPage){
   const pdf=await loadPdf(file), pages=[];
   for(let i=1;i<=pdf.numPages;i++){
     if(state.cancelled)throw new Error("CANCELLED");
-    const page=await pdf.getPage(i), content=await page.getTextContent();
+    const page=await pdf.getPage(i), content=await page.getTextContent({disableCombineTextItems:true});
     const items=content.items||[];
     let text="", lastY=null, lastEndX=null;
     for(const item of items){
@@ -386,7 +386,8 @@ async function extractText(file,onPage){
       } else if(lastEndX!==null && x!==null){
         const gap=x-lastEndX;
         const fontH=item.height||10;
-        if(gap>fontH*0.9) text+="\t";        // jarak lebar → batas kolom
+        const colThreshold=Math.max(fontH*0.6,6);
+        if(gap>colThreshold) text+="\t";       // jarak lebar → batas kolom
         else if(gap>1 && !/[\s\t]$/.test(text)) text+=" ";
       }
       text+=item.str||"";

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V1.7</title>
+<title>PDF Workbench — V1.8-DEBUG</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -59,7 +59,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V1.7 • Browser-first</div>
+    <div class="badge">V1.8-DEBUG • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -102,7 +102,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V1.7 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V1.8-DEBUG • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -371,10 +371,17 @@ async function splitPdf(file){
 
 async function extractText(file,onPage){
   const pdf=await loadPdf(file), pages=[];
+  window.__debugDump="";
   for(let i=1;i<=pdf.numPages;i++){
     if(state.cancelled)throw new Error("CANCELLED");
     const page=await pdf.getPage(i), content=await page.getTextContent({disableCombineTextItems:true});
     const items=content.items||[];
+    if(i===1){
+      window.__debugDump=items.slice(0,25).map((it,idx)=>{
+        const x=it.transform?.[4]??null, y=it.transform?.[5]??null;
+        return `${idx}: str="${it.str}" x=${x?.toFixed?.(2)} y=${y?.toFixed?.(2)} width=${it.width} height=${it.height} hasEOL=${it.hasEOL}`;
+      }).join("\n");
+    }
     let text="", lastY=null, lastEndX=null;
     for(const item of items){
       const y=item.transform?.[5] ?? null;
@@ -489,8 +496,10 @@ async function process(){
       const results=await splitPdf(file); results.forEach(r=>addOutput(r.blob,r.name));
     } else if(state.tool==="word"){
       const blob=await pdfToWord(file); addOutput(blob,`${safeBase(file.name)}.docx`,`Word • ${fmtBytes(blob.size)}`);
+      if(window.__debugDump) $("output").innerHTML+=`<div class="notice" style="white-space:pre-wrap;font-family:monospace;font-size:11px">DEBUG (halaman 1, 25 item pertama):\n${escapeHtml(window.__debugDump)}</div>`;
     } else if(state.tool==="excel"){
       const blob=await pdfToExcel(file); addOutput(blob,`${safeBase(file.name)}.xlsx`,`Excel • ${fmtBytes(blob.size)}`);
+      if(window.__debugDump) $("output").innerHTML+=`<div class="notice" style="white-space:pre-wrap;font-family:monospace;font-size:11px">DEBUG (halaman 1, 25 item pertama):\n${escapeHtml(window.__debugDump)}</div>`;
     } else if(state.tool==="ocr"){
       const blob=await ocrPdf(file); addOutput(blob,`${safeBase(file.name)}-ocr.txt`,`OCR • ${fmtBytes(blob.size)}`);
     }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V1.5</title>
+<title>PDF Workbench — V1.6</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -59,7 +59,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V1.5 • Browser-first</div>
+    <div class="badge">V1.6 • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -102,7 +102,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V1.5 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V1.6 • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -375,16 +375,26 @@ async function extractText(file,onPage){
     if(state.cancelled)throw new Error("CANCELLED");
     const page=await pdf.getPage(i), content=await page.getTextContent();
     const items=content.items||[];
-    let text="", lastY=null;
+    let text="", lastY=null, lastEndX=null;
     for(const item of items){
       const y=item.transform?.[5] ?? null;
+      const x=item.transform?.[4] ?? null;
       const isNewLine=lastY!==null && y!==null && Math.abs(y-lastY)>4;
-      if(isNewLine && text && !text.endsWith("\n")) text+="\n";
+      if(isNewLine){
+        if(text && !text.endsWith("\n")) text+="\n";
+        lastEndX=null;
+      } else if(lastEndX!==null && x!==null){
+        const gap=x-lastEndX;
+        const fontH=item.height||10;
+        if(gap>fontH*0.9) text+="\t";        // jarak lebar → batas kolom
+        else if(gap>1 && !/[\s\t]$/.test(text)) text+=" ";
+      }
       text+=item.str||"";
+      const approxWidth=item.width || (item.str||"").length*(item.height||8)*0.5;
+      lastEndX=(x!==null?x:0)+approxWidth;
       if(item.hasEOL){
         if(!text.endsWith("\n")) text+="\n";
-      } else {
-        text+=" ";
+        lastEndX=null;
       }
       lastY=y;
     }
@@ -413,7 +423,7 @@ async function pdfToWord(file){
 function lineToCells(line){
   const cleaned=line.replace(/\u00a0/g," ").trim();
   if(!cleaned)return [""];
-  if(/\t/.test(cleaned))return cleaned.split(/\t+/).map(s=>s.trim());
+  if(/\t/.test(cleaned))return cleaned.split(/\t+/).map(s=>s.trim()).filter((s,idx,arr)=>s!==""||idx===arr.length-1);
   const cells=cleaned.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
   return cells.length?cells:[cleaned];
 }

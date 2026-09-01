@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V1.9</title>
+<title>PDF Workbench — V2.0</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -51,6 +51,14 @@ h1{font-size:clamp(36px,7vw,68px);line-height:.98;margin:12px 0 16px;letter-spac
 .status{margin-top:12px;padding:11px 12px;border-radius:13px;background:#0d1526;border:1px solid #26334c;color:#aebbd2;font-size:13px;line-height:1.5;display:none}.status.show{display:block}.status.good{border-color:rgba(72,213,151,.3);color:#9af0c8}.status.warn{border-color:rgba(255,200,87,.3);color:#ffe19a}.status.err{border-color:rgba(255,102,122,.3);color:#ffabb8}
 .output{display:grid;gap:8px;margin-top:14px}.out{display:flex;align-items:center;gap:10px;border:1px solid #2a3955;background:#0e1728;border-radius:14px;padding:11px}.out .grow{flex:1;min-width:0}.out b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.out small{color:var(--muted)}
 .notice{margin-top:13px;padding:11px 12px;border-radius:13px;background:rgba(255,200,87,.07);border:1px solid rgba(255,200,87,.2);color:#e9dcae;font-size:12px;line-height:1.55}
+.orgGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:13px}
+.orgCard{background:#0e1728;border:1px solid #2a3955;border-radius:14px;padding:8px;text-align:center}
+.orgCard.removed{opacity:.35}
+.orgCard canvas{width:100%;border-radius:8px;background:#fff;display:block}
+.orgCard .pnum{font-size:11px;color:#9aa8c2;margin:6px 0 4px}
+.orgCard .orgBtns{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.orgCard .orgBtns button{border:1px solid #334361;background:#17223a;color:#dbe2f2;border-radius:8px;padding:4px 6px;font-size:11px;cursor:pointer}
+.orgCard .orgBtns button:disabled{opacity:.3;cursor:not-allowed}
 footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 @media(max-width:680px){.tools{grid-template-columns:1fr}.row{grid-template-columns:1fr}.modes{grid-template-columns:1fr}.app{padding:14px 12px 40px}.card{padding:15px;border-radius:22px}.hero p{font-size:15px}}
 </style>
@@ -59,7 +67,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V1.9 • Browser-first</div>
+    <div class="badge">V2.0 • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -75,6 +83,9 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <button class="tool" data-tool="word"><span class="icon">📄</span><b>PDF → Word</b><small>Ekstrak teks PDF menjadi dokumen Word.</small></button>
     <button class="tool" data-tool="excel"><span class="icon">📊</span><b>PDF → Excel</b><small>Ekstrak teks menjadi spreadsheet yang bisa diedit.</small></button>
     <button class="tool" data-tool="ocr"><span class="icon">🔎</span><b>OCR / Ambil Teks</b><small>Baca teks dari PDF scan atau gambar.</small></button>
+    <button class="tool" data-tool="img2pdf"><span class="icon">🖼️</span><b>JPG/PNG → PDF</b><small>Ubah satu atau beberapa gambar jadi satu PDF.</small></button>
+    <button class="tool" data-tool="pdf2img"><span class="icon">🌄</span><b>PDF → JPG/PNG</b><small>Simpan tiap halaman PDF sebagai gambar.</small></button>
+    <button class="tool" data-tool="organize"><span class="icon">🗂️</span><b>Organize PDF</b><small>Urutkan ulang, putar, atau hapus halaman.</small></button>
   </section>
 
   <main class="card">
@@ -87,6 +98,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
       <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple hidden>
     </div>
     <div id="files" class="files"></div>
+    <div id="organizer" class="files"></div>
     <div id="options"></div>
     <div id="notice"></div>
     <div class="actions">
@@ -102,7 +114,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V1.9 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V2.0 • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -131,7 +143,7 @@ async function getDocx(){
 }
 const state = {
   tool:"compress", files:[], cancelled:false, worker:null, outputs:[],
-  mode:"balanced"
+  mode:"balanced", organizePages:[]
 };
 const LIMIT = 50 * 1024 * 1024;
 const OCR_PAGE_LIMIT = 30;
@@ -199,6 +211,12 @@ function renderOptions(){
     html=`<div class="row"><div class="field"><label>Bahasa OCR</label><select id="ocrLang"><option value="ind">Indonesia (disarankan)</option><option value="eng">English</option><option value="ind+eng">Indonesia + English</option></select></div><div class="field"><label>Batas aman</label><input value="${OCR_PAGE_LIMIT} halaman" disabled></div></div>`;
   } else if(state.tool==="word" || state.tool==="excel"){
     html=`<div class="notice">Untuk PDF hasil scan/foto, gunakan <b>OCR / Ambil Teks</b> terlebih dahulu. Converter Word/Excel bekerja paling baik pada PDF yang memiliki text layer.</div>`;
+  } else if(state.tool==="pdf2img"){
+    html=`<div class="row"><div class="field"><label>Format gambar</label><select id="imgFormat"><option value="jpg">JPG</option><option value="png">PNG</option></select></div><div class="field"><label>Kualitas/Resolusi</label><select id="imgQuality"><option value="1.5">Standar</option><option value="2.2" selected>Tinggi (rekomendasi)</option><option value="3">Sangat tinggi (file besar)</option></select></div></div><div class="notice">Tiap halaman diunduh sebagai file gambar terpisah.</div>`;
+  } else if(state.tool==="img2pdf"){
+    html=`<div class="notice">Urutan gambar mengikuti urutan file di atas (pakai tombol ↑/↓ untuk mengatur ulang). Satu gambar jadi satu halaman PDF.</div>`;
+  } else if(state.tool==="organize"){
+    html=`<div class="notice">Pilih satu file PDF di atas untuk memuat halaman-halamannya, lalu atur urutan/rotasi/hapus lewat kartu di bawah.</div>`;
   }
   el.innerHTML=html;
   el.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;renderOptions()});
@@ -213,10 +231,21 @@ function setTool(tool){
     split:["Pisahkan PDF","Setiap rentang yang dipisah koma akan menjadi satu file PDF terpisah."],
     word:["PDF → Word","Ekstrak text layer PDF menjadi dokumen Word yang dapat diedit."],
     excel:["PDF → Excel","Ekstrak teks PDF menjadi spreadsheet. Baris dipisahkan menjadi data yang mudah diedit."],
-    ocr:["OCR / Ambil Teks","Baca teks dari PDF scan/gambar menggunakan OCR Indonesia."]
+    ocr:["OCR / Ambil Teks","Baca teks dari PDF scan/gambar menggunakan OCR Indonesia."],
+    img2pdf:["JPG/PNG → PDF","Gabungkan satu atau beberapa gambar menjadi satu file PDF, satu gambar per halaman."],
+    pdf2img:["PDF → JPG/PNG","Simpan tiap halaman PDF sebagai file gambar terpisah."],
+    organize:["Organize PDF","Urutkan ulang, putar, atau hapus halaman sebelum menyimpan ulang PDF."]
   }[tool];
   $("titleBlock").innerHTML=`<h2>${meta[0]}</h2><p class="sub">${meta[1]}</p>`;
-  $("dropHint").textContent=tool==="merge"?"Maksimal 50 MB per file • pilih beberapa PDF sekaligus.":"Maksimal 50 MB per file • hanya PDF.";
+  if(tool==="img2pdf"){
+    $("dropHint").textContent="Maksimal 50 MB per file • pilih beberapa gambar sekaligus (JPG/PNG).";
+    $("fileInput").accept="image/jpeg,image/png,.jpg,.jpeg,.png";
+  } else {
+    $("dropHint").textContent=tool==="merge"?"Maksimal 50 MB per file • pilih beberapa PDF sekaligus.":"Maksimal 50 MB per file • hanya PDF.";
+    $("fileInput").accept="application/pdf,.pdf";
+  }
+  $("fileInput").multiple = (tool==="merge"||tool==="img2pdf");
+  $("organizer").innerHTML="";
   renderOptions(); renderFiles();
 }
 document.querySelectorAll(".tool").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
@@ -229,25 +258,35 @@ const drop=$("drop");
 drop.addEventListener("drop",e=>addFiles([...e.dataTransfer.files]));
 
 function addFiles(list){
-  const pdfs=list.filter(f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name));
-  const rejected=list.filter(f=>!(f.type==="application/pdf"||/\.pdf$/i.test(f.name)) || f.size>LIMIT);
-  if(rejected.length) setStatus(`Ada file yang ditolak. Pastikan format PDF dan ukuran maksimal ${fmtBytes(LIMIT)} per file.`,"warn");
-  const valid=pdfs.filter(f=>f.size<=LIMIT);
-  if(state.tool!=="merge") state.files=valid.slice(0,1); else state.files=valid;
+  const isImgTool=state.tool==="img2pdf";
+  const matchType=f=> isImgTool
+    ? (/^image\/(jpeg|png)$/.test(f.type)||/\.(jpe?g|png)$/i.test(f.name))
+    : (f.type==="application/pdf"||/\.pdf$/i.test(f.name));
+  const valid0=list.filter(f=>matchType(f));
+  const rejected=list.filter(f=>!matchType(f) || f.size>LIMIT);
+  if(rejected.length) setStatus(`Ada file yang ditolak. Pastikan format ${isImgTool?"JPG/PNG":"PDF"} dan ukuran maksimal ${fmtBytes(LIMIT)} per file.`,"warn");
+  const valid=valid0.filter(f=>f.size<=LIMIT);
+  if(state.tool==="merge"||isImgTool) state.files=valid; else state.files=valid.slice(0,1);
   renderFiles(); clearOutputs(); resetProgress();
+  if(state.tool==="organize" && state.files.length) renderOrganizer(state.files[0]);
+  else $("organizer").innerHTML="";
 }
 function renderFiles(){
   $("files").innerHTML="";
+  const reorderable=state.tool==="img2pdf" && state.files.length>1;
   state.files.forEach((f,i)=>{
     const row=document.createElement("div");row.className="file";
-    row.innerHTML=`<span>📄</span><div class="name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div><small>${fmtBytes(f.size)}</small><button class="secondary" data-remove="${i}">×</button>`;
+    const arrows=reorderable?`<button class="secondary" data-up="${i}" ${i===0?"disabled":""}>↑</button><button class="secondary" data-down="${i}" ${i===state.files.length-1?"disabled":""}>↓</button>`:"";
+    row.innerHTML=`<span>${state.tool==="img2pdf"?"🖼️":"📄"}</span><div class="name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div><small>${fmtBytes(f.size)}</small>${arrows}<button class="secondary" data-remove="${i}">×</button>`;
     $("files").appendChild(row);
   });
   $("files").querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{state.files.splice(+b.dataset.remove,1);renderFiles()});
+  $("files").querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{const i=+b.dataset.up;[state.files[i-1],state.files[i]]=[state.files[i],state.files[i-1]];renderFiles()});
+  $("files").querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>{const i=+b.dataset.down;[state.files[i+1],state.files[i]]=[state.files[i],state.files[i+1]];renderFiles()});
 }
 
 $("clear").onclick=()=>{
-  cancelJob(true); state.files=[]; clearOutputs(); clearStatus(); resetProgress(); $("fileInput").value=""; renderFiles();
+  cancelJob(true); state.files=[]; state.organizePages=[]; clearOutputs(); clearStatus(); resetProgress(); $("fileInput").value=""; $("organizer").innerHTML=""; renderFiles();
 };
 function cancelJob(silent=false){
   state.cancelled=true;
@@ -258,7 +297,134 @@ function cancelJob(silent=false){
 $("cancel").onclick=()=>cancelJob(false);
 
 function ensureFiles(n=1){
-  if(state.files.length<n) throw new Error(n===1?"Pilih satu file PDF terlebih dahulu.":"Pilih minimal dua file PDF.");
+  if(state.files.length<n) throw new Error(n===1?"Pilih satu file terlebih dahulu.":"Pilih minimal dua file.");
+}
+
+// ===== JPG/PNG -> PDF =====
+async function imagesToPdf(files){
+  const out=await PDFDocument.create();
+  for(let i=0;i<files.length;i++){
+    if(state.cancelled)throw new Error("CANCELLED");
+    setProgress(i/files.length*100,`Menambahkan gambar ${i+1} dari ${files.length}...`);
+    const f=files[i], bytes=await f.arrayBuffer();
+    const isPng=f.type==="image/png"||/\.png$/i.test(f.name);
+    let img;
+    try{
+      img = isPng ? await out.embedPng(bytes) : await out.embedJpg(bytes);
+    }catch(e){
+      throw new Error(`Gagal membaca gambar "${f.name}". Pastikan file JPG/PNG yang valid.`);
+    }
+    const page=out.addPage([img.width,img.height]);
+    page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});
+  }
+  const bytes=await out.save({useObjectStreams:true});
+  setProgress(100,"PDF selesai dibuat.");
+  return new Blob([bytes],{type:"application/pdf"});
+}
+
+// ===== PDF -> JPG/PNG =====
+async function pdfToImages(file){
+  const pdf=await loadPdf(file);
+  const format=$("imgFormat")?.value||"jpg";
+  const scale=Number($("imgQuality")?.value||2.2);
+  const results=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    if(state.cancelled)throw new Error("CANCELLED");
+    setProgress((i-1)/pdf.numPages*100,`Merender halaman ${i} dari ${pdf.numPages}...`);
+    const page=await pdf.getPage(i);
+    const viewport=page.getViewport({scale});
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(viewport.width));
+    canvas.height=Math.max(1,Math.round(viewport.height));
+    const ctx=canvas.getContext("2d",{alpha:false});
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+    await page.render({canvasContext:ctx,viewport}).promise;
+    const mime=format==="png"?"image/png":"image/jpeg";
+    const blob=await new Promise(r=>canvas.toBlob(r,mime,format==="png"?undefined:.92));
+    results.push({blob,name:`${safeBase(file.name)}-halaman-${i}.${format}`});
+    page.cleanup();
+    canvas.width=1;canvas.height=1;
+    setProgress(i/pdf.numPages*100,`Halaman ${i} dari ${pdf.numPages} selesai.`);
+  }
+  return results;
+}
+
+// ===== Organize PDF =====
+async function renderOrganizer(file){
+  $("organizer").innerHTML=`<div class="notice">Memuat halaman...</div>`;
+  let pdf;
+  try{ pdf=await loadPdf(file); }
+  catch(e){ $("organizer").innerHTML=`<div class="notice">${escapeHtml(failMessage(e))}</div>`; return; }
+  state.organizePages=Array.from({length:pdf.numPages},(_,i)=>({originalIndex:i,rotation:0,removed:false}));
+  const grid=document.createElement("div"); grid.className="orgGrid";
+  $("organizer").innerHTML=""; $("organizer").appendChild(grid);
+  for(let i=0;i<pdf.numPages;i++){
+    if(!document.body.contains(grid)) return; // dibatalkan/ganti tool
+    const page=await pdf.getPage(i+1);
+    const viewport=page.getViewport({scale:0.28});
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(viewport.width));
+    canvas.height=Math.max(1,Math.round(viewport.height));
+    const ctx=canvas.getContext("2d",{alpha:false});
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+    await page.render({canvasContext:ctx,viewport}).promise;
+    page.cleanup();
+    const card=document.createElement("div"); card.className="orgCard"; card.dataset.idx=i;
+    card.appendChild(canvas);
+    const pnum=document.createElement("div"); pnum.className="pnum"; pnum.textContent=`Asli hal. ${i+1}`;
+    card.appendChild(pnum);
+    const btns=document.createElement("div"); btns.className="orgBtns";
+    btns.innerHTML=`<button data-act="left">←</button><button data-act="rotate">⟳</button><button data-act="right">→</button><button data-act="del">🗑</button>`;
+    card.appendChild(btns);
+    grid.appendChild(card);
+  }
+  wireOrganizerButtons(grid);
+}
+function wireOrganizerButtons(grid){
+  grid.querySelectorAll(".orgCard").forEach(card=>{
+    const idx=+card.dataset.idx;
+    card.querySelector('[data-act="rotate"]').onclick=()=>{
+      const entry=state.organizePages.find(p=>p.originalIndex===idx);
+      entry.rotation=(entry.rotation+90)%360;
+      card.querySelector("canvas").style.transform=`rotate(${entry.rotation}deg)`;
+    };
+    card.querySelector('[data-act="del"]').onclick=()=>{
+      const entry=state.organizePages.find(p=>p.originalIndex===idx);
+      entry.removed=!entry.removed;
+      card.classList.toggle("removed",entry.removed);
+    };
+    card.querySelector('[data-act="left"]').onclick=()=>{
+      const pos=state.organizePages.findIndex(p=>p.originalIndex===idx);
+      if(pos>0){ [state.organizePages[pos-1],state.organizePages[pos]]=[state.organizePages[pos],state.organizePages[pos-1]]; reflowOrganizerGrid(grid); }
+    };
+    card.querySelector('[data-act="right"]').onclick=()=>{
+      const pos=state.organizePages.findIndex(p=>p.originalIndex===idx);
+      if(pos<state.organizePages.length-1){ [state.organizePages[pos+1],state.organizePages[pos]]=[state.organizePages[pos],state.organizePages[pos+1]]; reflowOrganizerGrid(grid); }
+    };
+  });
+}
+function reflowOrganizerGrid(grid){
+  state.organizePages.forEach(entry=>{
+    const card=grid.querySelector(`.orgCard[data-idx="${entry.originalIndex}"]`);
+    if(card) grid.appendChild(card);
+  });
+}
+async function buildOrganizedPdf(file){
+  if(!state.organizePages.length) throw new Error("Belum ada halaman yang dimuat. Pilih file PDF terlebih dahulu.");
+  const kept=state.organizePages.filter(p=>!p.removed);
+  if(!kept.length) throw new Error("Semua halaman ditandai hapus. Sisakan minimal satu halaman.");
+  const src=await loadPdfLib(file), out=await PDFDocument.create();
+  for(let i=0;i<kept.length;i++){
+    if(state.cancelled)throw new Error("CANCELLED");
+    const entry=kept[i];
+    const [p]=await out.copyPages(src,[entry.originalIndex]);
+    if(entry.rotation) p.setRotation(PDFLib.degrees(entry.rotation));
+    out.addPage(p);
+    setProgress((i+1)/kept.length*100,`Menyusun halaman ${i+1} dari ${kept.length}...`);
+  }
+  const bytes=await out.save({useObjectStreams:true});
+  setProgress(100,"Susunan PDF selesai.");
+  return new Blob([bytes],{type:"application/pdf"});
 }
 
 async function loadPdf(file){
@@ -481,7 +647,7 @@ async function ocrPdf(file){
 async function process(){
   state.cancelled=false; $("cancel").disabled=false; clearOutputs(); clearStatus();
   try{
-    if(state.tool==="merge")ensureFiles(2); else ensureFiles(1);
+    if(state.tool==="merge") ensureFiles(2); else ensureFiles(1);
     const file=state.files[0];
     if(state.tool==="compress"){
       const blob=await compressPdf(file); addOutput(blob,`${safeBase(file.name)}-compressed.pdf`,`Hasil kompresi • ${fmtBytes(blob.size)}`);
@@ -495,6 +661,12 @@ async function process(){
       const blob=await pdfToExcel(file); addOutput(blob,`${safeBase(file.name)}.xlsx`,`Excel • ${fmtBytes(blob.size)}`);
     } else if(state.tool==="ocr"){
       const blob=await ocrPdf(file); addOutput(blob,`${safeBase(file.name)}-ocr.txt`,`OCR • ${fmtBytes(blob.size)}`);
+    } else if(state.tool==="img2pdf"){
+      const blob=await imagesToPdf(state.files); addOutput(blob,`${safeBase(state.files[0].name)}-gabungan.pdf`,`${state.files.length} gambar • ${fmtBytes(blob.size)}`);
+    } else if(state.tool==="pdf2img"){
+      const results=await pdfToImages(file); results.forEach(r=>addOutput(r.blob,r.name));
+    } else if(state.tool==="organize"){
+      const blob=await buildOrganizedPdf(file); addOutput(blob,`${safeBase(file.name)}-organized.pdf`,`Hasil susun ulang • ${fmtBytes(blob.size)}`);
     }
     setStatus("Selesai. Hasil tersedia di bawah.","good");
   }catch(e){

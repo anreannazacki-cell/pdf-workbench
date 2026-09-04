@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>PDF Workbench — V2.0</title>
+<title>PDF Workbench — V2.1</title>
 <style>
 :root{
   --bg:#0b1020;--panel:#121a2c;--panel2:#17223a;--line:#2a3856;
@@ -67,7 +67,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
 <div class="app">
   <header class="top">
     <div class="brand"><div class="logo">PDF</div><div><b>PDF Workbench</b><span>Simple tools. Better PDFs.</span></div></div>
-    <div class="badge">V2.0 • Browser-first</div>
+    <div class="badge">V2.1 • Browser-first</div>
   </header>
 
   <section class="hero">
@@ -114,7 +114,7 @@ footer{text-align:center;color:#667590;font-size:12px;padding:24px}
     <div class="output" id="output"></div>
   </main>
 
-  <footer>PDF Workbench • V2.0 • Tidak mengunggah file pengguna ke server.</footer>
+  <footer>PDF Workbench • V2.1 • Tidak mengunggah file pengguna ke server.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -148,6 +148,7 @@ const state = {
 const LIMIT = 50 * 1024 * 1024;
 const OCR_PAGE_LIMIT = 30;
 const SPLIT_OUTPUT_LIMIT = 30;
+const ORGANIZE_PAGE_LIMIT = 40;
 
 const CONFIG = {
   compress:{
@@ -355,6 +356,11 @@ async function renderOrganizer(file){
   let pdf;
   try{ pdf=await loadPdf(file); }
   catch(e){ $("organizer").innerHTML=`<div class="notice">${escapeHtml(failMessage(e))}</div>`; return; }
+  if(pdf.numPages>ORGANIZE_PAGE_LIMIT){
+    $("organizer").innerHTML=`<div class="notice">PDF ini punya ${pdf.numPages} halaman, melebihi batas ${ORGANIZE_PAGE_LIMIT} halaman untuk mode Organize di browser mobile. Gunakan PDF yang lebih pendek.</div>`;
+    state.organizePages=[];
+    return;
+  }
   state.organizePages=Array.from({length:pdf.numPages},(_,i)=>({originalIndex:i,rotation:0,removed:false}));
   const grid=document.createElement("div"); grid.className="orgGrid";
   $("organizer").innerHTML=""; $("organizer").appendChild(grid);
@@ -414,13 +420,15 @@ async function buildOrganizedPdf(file){
   const kept=state.organizePages.filter(p=>!p.removed);
   if(!kept.length) throw new Error("Semua halaman ditandai hapus. Sisakan minimal satu halaman.");
   const src=await loadPdfLib(file), out=await PDFDocument.create();
-  for(let i=0;i<kept.length;i++){
+  setProgress(5,"Menyalin halaman...");
+  const copied=await out.copyPages(src,kept.map(e=>e.originalIndex));
+  for(let i=0;i<copied.length;i++){
     if(state.cancelled)throw new Error("CANCELLED");
-    const entry=kept[i];
-    const [p]=await out.copyPages(src,[entry.originalIndex]);
+    const entry=kept[i], p=copied[i];
     if(entry.rotation) p.setRotation(PDFLib.degrees(entry.rotation));
     out.addPage(p);
-    setProgress((i+1)/kept.length*100,`Menyusun halaman ${i+1} dari ${kept.length}...`);
+    setProgress(5+(i+1)/copied.length*90,`Menyusun halaman ${i+1} dari ${copied.length}...`);
+    await sleep(0);
   }
   const bytes=await out.save({useObjectStreams:true});
   setProgress(100,"Susunan PDF selesai.");

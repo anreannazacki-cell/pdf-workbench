@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d16">
+<title>PDF ke Excel — PDF Workbench</title>
+<link rel="stylesheet" href="shared/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="logo">P</span><span>PDF<br><small>WORKBENCH</small></span></a>
+    <div class="navlinks"><a href="index.html#tools">Alat PDF</a><a href="#">Harga</a><a href="#">Bantuan</a><a href="#">Blog</a></div>
+    <div class="navcta"><a class="btn btn-ghost" href="#">Login</a><a class="btn btn-primary" href="#">Daftar Gratis</a></div>
+  </div>
+</nav>
+
+<main class="wrap" style="max-width:760px">
+  <div class="breadcrumb"><a href="index.html">Beranda</a><span>›</span><span>PDF ke Excel</span></div>
+
+  <div class="tool-header">
+    <div class="titlerow">
+      <div class="ticon" style="width:52px;height:52px;font-size:15px;background:linear-gradient(135deg,#3ddc97,#1c8f5c)">X</div>
+      <div><h1>PDF → Excel</h1><p>Ubah PDF ke spreadsheet Excel (.xlsx) yang dapat diedit.</p></div>
+    </div>
+    <div class="safebox"><span>🛡️</span><div><b>File Anda aman</b>Diproses di perangkat ini, tidak pernah diunggah.</div></div>
+  </div>
+
+  <div class="step"><div class="num">1</div><div class="label">Pilih file PDF</div></div>
+  <div class="panel">
+    <div id="drop" class="drop">
+      <div class="icon" style="background:linear-gradient(135deg,#3ddc97,#1c8f5c)">PDF</div>
+      <strong>Pilih file PDF</strong>
+      <span>atau tarik &amp; lepas file di sini · Maksimal 50 MB</span>
+      <button class="btn btn-primary" id="pick" style="margin:0 auto">Pilih File PDF</button>
+      <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden>
+    </div>
+    <div id="files"></div>
+    <div class="notice">Untuk PDF hasil scan/foto, gunakan <b>OCR PDF</b> terlebih dahulu. Converter ini bekerja paling baik pada PDF yang memiliki text layer.</div>
+  </div>
+
+  <div class="step"><div class="num">2</div><div class="label">Ubah ke Excel</div></div>
+  <div class="panel">
+    <button class="actionbtn" id="process" disabled>📊 Ubah ke Excel</button>
+    <div class="microcopy">🔒 Proses cepat, aman, dan otomatis</div>
+    <div class="progressWrap" id="progressWrap">
+      <div class="progressHead"><span id="progressText">Menyiapkan...</span><span id="progressPct">0%</span></div>
+      <div class="bar"><i id="progressBar"></i></div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="step" id="step3label" style="display:none"><div class="num">3</div><div class="label">Selesai</div></div>
+  <div class="panel" id="donePanel" style="display:none">
+    <div class="donepanel"><div class="check">✓</div><h2>Spreadsheet Excel berhasil dibuat.</h2></div>
+    <div class="resultrow" id="resultRow"></div>
+    <div class="actionrow">
+      <button class="btn-secondary" id="another">↺ Proses file lain</button>
+      <a class="btn-secondary" href="index.html" style="text-align:center">← Kembali ke Alat PDF</a>
+    </div>
+  </div>
+</main>
+
+<div class="footerbar">🛡️ File Anda tidak pernah diunggah ke server kami — semua proses berjalan langsung di browser Anda.</div>
+
+<script type="module">
+import { pdfToExcel, fmtBytes, safeBase, escapeHtml, escapeAttr, failMessage, LIMIT } from "./shared/engine.js";
+const $=id=>document.getElementById(id);
+let file=null, cancelled=false;
+
+$("pick").onclick=()=>$("fileInput").click();
+$("fileInput").addEventListener("change",e=>addFile(e.target.files[0]));
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag")}));
+drop.addEventListener("drop",e=>addFile(e.dataTransfer.files[0]));
+
+function addFile(f){
+  if(!f) return;
+  if(!(f.type==="application/pdf"||/\.pdf$/i.test(f.name))){ setStatus("Hanya file PDF yang didukung.","err"); return; }
+  if(f.size>LIMIT){ setStatus(`File melebihi batas ${fmtBytes(LIMIT)}.`,"err"); return; }
+  file=f;
+  $("files").innerHTML=`<div class="filerow"><div class="ficon" style="background:linear-gradient(135deg,#3ddc97,#1c8f5c)">PDF</div><div class="fname"><b>${escapeHtml(f.name)}</b><small>${fmtBytes(f.size)}</small></div><button id="rmFile">✕</button></div>`;
+  $("rmFile").onclick=()=>{ file=null; $("files").innerHTML=""; $("process").disabled=true; };
+  $("process").disabled=false;
+  $("donePanel").style.display="none"; $("step3label").style.display="none";
+}
+
+function setProgress(p,text){
+  const pct=Math.max(0,Math.min(100,Math.round(p)));
+  $("progressWrap").classList.add("show");
+  $("progressBar").style.width=pct+"%"; $("progressPct").textContent=pct+"%"; $("progressText").textContent=text||"Memproses...";
+}
+function setStatus(msg,type=""){ const el=$("status"); el.textContent=msg; el.className="status show "+type; }
+
+$("process").onclick=async()=>{
+  if(!file) return;
+  cancelled=false; $("process").disabled=true; $("status").className="status";
+  try{
+    const blob=await pdfToExcel(file,setProgress,()=>cancelled);
+    const outputName=`${safeBase(file.name)}.xlsx`;
+    const url=URL.createObjectURL(blob);
+    $("resultRow").innerHTML=`<div class="ficon" style="background:linear-gradient(135deg,#3ddc97,#1c8f5c)">X</div><div class="grow"><b>${escapeHtml(outputName)}</b><small>${fmtBytes(blob.size)}</small></div><a class="dl" href="${url}" download="${escapeAttr(outputName)}">Download Excel</a>`;
+    $("step3label").style.display="flex"; $("donePanel").style.display="block";
+    $("donePanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ setStatus(failMessage(e),"err"); }
+  finally{ $("process").disabled=false; }
+};
+
+$("another").onclick=()=>{
+  file=null; $("files").innerHTML=""; $("process").disabled=true;
+  $("donePanel").style.display="none"; $("step3label").style.display="none";
+  $("progressWrap").classList.remove("show"); $("status").className="status"; $("fileInput").value="";
+};
+</script>
+</body>
+</html>

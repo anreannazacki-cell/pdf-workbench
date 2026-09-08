@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d16">
+<title>Organize PDF — PDF Workbench</title>
+<link rel="stylesheet" href="shared/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="logo">P</span><span>PDF<br><small>WORKBENCH</small></span></a>
+    <div class="navlinks"><a href="index.html#tools">Alat PDF</a><a href="#">Harga</a><a href="#">Bantuan</a><a href="#">Blog</a></div>
+    <div class="navcta"><a class="btn btn-ghost" href="#">Login</a><a class="btn btn-primary" href="#">Daftar Gratis</a></div>
+  </div>
+</nav>
+
+<main class="wrap" style="max-width:900px">
+  <div class="breadcrumb"><a href="index.html">Beranda</a><span>›</span><span>Organize PDF</span></div>
+
+  <div class="tool-header">
+    <div class="titlerow">
+      <div class="ticon" style="width:52px;height:52px;font-size:20px;background:linear-gradient(135deg,#2dd4bf,#0e9488)">⇄</div>
+      <div><h1>Organize PDF</h1><p>Urutkan ulang, putar, atau hapus halaman sebelum menyimpan ulang PDF.</p></div>
+    </div>
+    <div class="safebox"><span>🛡️</span><div><b>File Anda aman</b>Diproses di perangkat ini, tidak pernah diunggah.</div></div>
+  </div>
+
+  <div class="step"><div class="num">1</div><div class="label">Pilih file PDF</div></div>
+  <div class="panel">
+    <div id="drop" class="drop">
+      <div class="icon" style="background:linear-gradient(135deg,#2dd4bf,#0e9488)">PDF</div>
+      <strong>Pilih file PDF</strong>
+      <span id="dropHint">atau tarik &amp; lepas file di sini</span>
+      <button class="btn btn-primary" id="pick" style="margin:0 auto">Pilih File PDF</button>
+      <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden>
+    </div>
+    <div id="files"></div>
+    <div class="notice" id="limitNotice"></div>
+  </div>
+
+  <div class="step" id="step2label" style="display:none"><div class="num">2</div><div class="label">Atur halaman</div></div>
+  <div class="panel" id="orgPanel" style="display:none">
+    <div id="organizer"></div>
+    <button class="actionbtn" id="process" style="margin-top:18px">🗂️ Simpan Susunan Baru</button>
+    <div class="microcopy">🔒 Proses cepat, aman, dan otomatis</div>
+    <div class="progressWrap" id="progressWrap">
+      <div class="progressHead"><span id="progressText">Menyiapkan...</span><span id="progressPct">0%</span></div>
+      <div class="bar"><i id="progressBar"></i></div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="step" id="step3label" style="display:none"><div class="num">3</div><div class="label">Selesai</div></div>
+  <div class="panel" id="donePanel" style="display:none">
+    <div class="donepanel"><div class="check">✓</div><h2>PDF berhasil disusun ulang.</h2></div>
+    <div class="resultrow" id="resultRow"></div>
+    <div class="actionrow">
+      <button class="btn-secondary" id="another">↺ Proses file lain</button>
+      <a class="btn-secondary" href="index.html" style="text-align:center">← Kembali ke Alat PDF</a>
+    </div>
+  </div>
+</main>
+
+<div class="footerbar">🛡️ File Anda tidak pernah diunggah ke server kami — semua proses berjalan langsung di browser Anda.</div>
+
+<script type="module">
+import { loadOrganizerPages, renderThumbnail, buildOrganizedPdf, fmtBytes, safeBase, escapeHtml, escapeAttr, failMessage, LIMIT, ORGANIZE_PAGE_LIMIT, ORGANIZE_SIZE_LIMIT_MB } from "./shared/engine.js";
+const $=id=>document.getElementById(id);
+let file=null, cancelled=false, organizePages=[];
+
+$("dropHint").textContent=`atau tarik & lepas file di sini · Maks ${ORGANIZE_PAGE_LIMIT} halaman, ${ORGANIZE_SIZE_LIMIT_MB} MB (disesuaikan dari RAM device kamu)`;
+$("limitNotice").textContent=`Batas mode ini di browser kamu: ${ORGANIZE_PAGE_LIMIT} halaman dan ${ORGANIZE_SIZE_LIMIT_MB} MB. PDF berisi banyak gambar/scan resolusi tinggi akan lebih cepat kena batas ini walau halamannya sedikit.`;
+
+$("pick").onclick=()=>$("fileInput").click();
+$("fileInput").addEventListener("change",e=>addFile(e.target.files[0]));
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag")}));
+drop.addEventListener("drop",e=>addFile(e.dataTransfer.files[0]));
+
+function setProgress(p,text){
+  const pct=Math.max(0,Math.min(100,Math.round(p)));
+  $("progressWrap").classList.add("show");
+  $("progressBar").style.width=pct+"%"; $("progressPct").textContent=pct+"%"; $("progressText").textContent=text||"Memproses...";
+}
+function setStatus(msg,type=""){ const el=$("status"); el.textContent=msg; el.className="status show "+type; }
+
+async function addFile(f){
+  if(!f) return;
+  if(!(f.type==="application/pdf"||/\.pdf$/i.test(f.name))){ setStatus("Hanya file PDF yang didukung.","err"); return; }
+  if(f.size>LIMIT){ setStatus(`File melebihi batas ${fmtBytes(LIMIT)}.`,"err"); return; }
+  file=f;
+  $("files").innerHTML=`<div class="filerow"><div class="ficon" style="background:linear-gradient(135deg,#2dd4bf,#0e9488)">PDF</div><div class="fname"><b>${escapeHtml(f.name)}</b><small>${fmtBytes(f.size)}</small></div><button id="rmFile">✕</button></div>`;
+  $("rmFile").onclick=()=>{ file=null; $("files").innerHTML=""; $("orgPanel").style.display="none"; $("step2label").style.display="none"; };
+  $("donePanel").style.display="none"; $("step3label").style.display="none";
+
+  $("organizer").innerHTML=`<div class="notice">Memuat halaman...</div>`;
+  $("step2label").style.display="flex"; $("orgPanel").style.display="block";
+  try{
+    const pdf=await loadOrganizerPages(file);
+    organizePages=Array.from({length:pdf.numPages},(_,i)=>({originalIndex:i,rotation:0,removed:false}));
+    const grid=document.createElement("div"); grid.className="orgGrid";
+    $("organizer").innerHTML=""; $("organizer").appendChild(grid);
+    for(let i=0;i<pdf.numPages;i++){
+      if(!document.body.contains(grid)) return;
+      const canvas=await renderThumbnail(pdf,i+1,0.28);
+      const card=document.createElement("div"); card.className="orgCard"; card.dataset.idx=i;
+      card.appendChild(canvas);
+      const pnum=document.createElement("div"); pnum.className="pnum"; pnum.textContent=`Asli hal. ${i+1}`;
+      card.appendChild(pnum);
+      const btns=document.createElement("div"); btns.className="orgBtns";
+      btns.innerHTML=`<button data-act="left">←</button><button data-act="rotate">⟳</button><button data-act="right">→</button><button data-act="del">🗑</button>`;
+      card.appendChild(btns);
+      grid.appendChild(card);
+    }
+    wireOrganizerButtons(grid);
+    try{ await pdf.destroy?.(); }catch{}
+  }catch(e){
+    $("organizer").innerHTML=`<div class="notice">${escapeHtml(failMessage(e))}</div>`;
+    organizePages=[];
+  }
+}
+
+function wireOrganizerButtons(grid){
+  grid.querySelectorAll(".orgCard").forEach(card=>{
+    const idx=+card.dataset.idx;
+    card.querySelector('[data-act="rotate"]').onclick=()=>{
+      const entry=organizePages.find(p=>p.originalIndex===idx);
+      entry.rotation=(entry.rotation+90)%360;
+      card.querySelector("canvas").style.transform=`rotate(${entry.rotation}deg)`;
+    };
+    card.querySelector('[data-act="del"]').onclick=()=>{
+      const entry=organizePages.find(p=>p.originalIndex===idx);
+      entry.removed=!entry.removed;
+      card.classList.toggle("removed",entry.removed);
+    };
+    card.querySelector('[data-act="left"]').onclick=()=>{
+      const pos=organizePages.findIndex(p=>p.originalIndex===idx);
+      if(pos>0){ [organizePages[pos-1],organizePages[pos]]=[organizePages[pos],organizePages[pos-1]]; reflow(grid); }
+    };
+    card.querySelector('[data-act="right"]').onclick=()=>{
+      const pos=organizePages.findIndex(p=>p.originalIndex===idx);
+      if(pos<organizePages.length-1){ [organizePages[pos+1],organizePages[pos]]=[organizePages[pos],organizePages[pos+1]]; reflow(grid); }
+    };
+  });
+}
+function reflow(grid){
+  organizePages.forEach(entry=>{
+    const card=grid.querySelector(`.orgCard[data-idx="${entry.originalIndex}"]`);
+    if(card) grid.appendChild(card);
+  });
+}
+
+$("process").onclick=async()=>{
+  if(!file || !organizePages.length) return;
+  cancelled=false; $("process").disabled=true; $("status").className="status";
+  try{
+    const blob=await buildOrganizedPdf(file,organizePages,setProgress,()=>cancelled);
+    const outputName=`${safeBase(file.name)}-organized.pdf`;
+    const url=URL.createObjectURL(blob);
+    $("resultRow").innerHTML=`<div class="ficon" style="background:linear-gradient(135deg,#2dd4bf,#0e9488)">PDF</div><div class="grow"><b>${escapeHtml(outputName)}</b><small>${fmtBytes(blob.size)}</small></div><a class="dl" href="${url}" download="${escapeAttr(outputName)}">Download PDF</a>`;
+    $("step3label").style.display="flex"; $("donePanel").style.display="block";
+    $("donePanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ setStatus(failMessage(e),"err"); }
+  finally{ $("process").disabled=false; }
+};
+
+$("another").onclick=()=>{
+  file=null; organizePages=[]; $("files").innerHTML=""; $("organizer").innerHTML="";
+  $("orgPanel").style.display="none"; $("step2label").style.display="none";
+  $("donePanel").style.display="none"; $("step3label").style.display="none";
+  $("progressWrap").classList.remove("show"); $("status").className="status"; $("fileInput").value="";
+};
+</script>
+</body>
+</html>

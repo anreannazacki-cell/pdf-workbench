@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d16">
+<title>JPG/PNG ke PDF — PDF Workbench</title>
+<link rel="stylesheet" href="shared/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="logo">P</span><span>PDF<br><small>WORKBENCH</small></span></a>
+    <div class="navlinks"><a href="index.html#tools">Alat PDF</a><a href="#">Harga</a><a href="#">Bantuan</a><a href="#">Blog</a></div>
+    <div class="navcta"><a class="btn btn-ghost" href="#">Login</a><a class="btn btn-primary" href="#">Daftar Gratis</a></div>
+  </div>
+</nav>
+
+<main class="wrap" style="max-width:760px">
+  <div class="breadcrumb"><a href="index.html">Beranda</a><span>›</span><span>JPG/PNG ke PDF</span></div>
+
+  <div class="tool-header">
+    <div class="titlerow">
+      <div class="ticon" style="width:52px;height:52px;font-size:13px;background:linear-gradient(135deg,#ffb84f,#e08a1e)">JPG</div>
+      <div><h1>JPG/PNG → PDF</h1><p>Gabungkan satu atau beberapa gambar menjadi satu file PDF.</p></div>
+    </div>
+    <div class="safebox"><span>🛡️</span><div><b>File Anda aman</b>Diproses di perangkat ini, tidak pernah diunggah.</div></div>
+  </div>
+
+  <div class="step"><div class="num">1</div><div class="label">Pilih gambar (JPG/PNG)</div></div>
+  <div class="panel">
+    <div id="drop" class="drop">
+      <div class="icon" style="background:linear-gradient(135deg,#ffb84f,#e08a1e)">JPG</div>
+      <strong>Pilih gambar</strong>
+      <span>atau tarik &amp; lepas beberapa gambar di sini · Maksimal 50 MB per file</span>
+      <button class="btn btn-primary" id="pick" style="margin:0 auto">Pilih Gambar</button>
+      <input id="fileInput" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple hidden>
+    </div>
+    <div id="files"></div>
+    <div class="notice" id="orderHint" style="display:none">Urutan gambar = urutan halaman PDF. Gunakan tombol ↑/↓ untuk mengatur ulang.</div>
+  </div>
+
+  <div class="step"><div class="num">2</div><div class="label">Gabungkan jadi PDF</div></div>
+  <div class="panel">
+    <button class="actionbtn" id="process" disabled>🖼️ Ubah ke PDF</button>
+    <div class="microcopy">🔒 Proses cepat, aman, dan otomatis</div>
+    <div class="progressWrap" id="progressWrap">
+      <div class="progressHead"><span id="progressText">Menyiapkan...</span><span id="progressPct">0%</span></div>
+      <div class="bar"><i id="progressBar"></i></div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="step" id="step3label" style="display:none"><div class="num">3</div><div class="label">Selesai</div></div>
+  <div class="panel" id="donePanel" style="display:none">
+    <div class="donepanel"><div class="check">✓</div><h2>PDF berhasil dibuat dari gambar.</h2></div>
+    <div class="resultrow" id="resultRow"></div>
+    <div class="actionrow">
+      <button class="btn-secondary" id="another">↺ Proses file lain</button>
+      <a class="btn-secondary" href="index.html" style="text-align:center">← Kembali ke Alat PDF</a>
+    </div>
+  </div>
+</main>
+
+<div class="footerbar">🛡️ File Anda tidak pernah diunggah ke server kami — semua proses berjalan langsung di browser Anda.</div>
+
+<script type="module">
+import { imagesToPdf, fmtBytes, safeBase, escapeHtml, escapeAttr, failMessage, LIMIT } from "./shared/engine.js";
+const $=id=>document.getElementById(id);
+let files=[], cancelled=false;
+
+$("pick").onclick=()=>$("fileInput").click();
+$("fileInput").addEventListener("change",e=>addFiles([...e.target.files]));
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag")}));
+drop.addEventListener("drop",e=>addFiles([...e.dataTransfer.files]));
+
+function matchImg(f){ return /^image\/(jpeg|png)$/.test(f.type)||/\.(jpe?g|png)$/i.test(f.name); }
+
+function addFiles(list){
+  const valid=list.filter(f=>matchImg(f) && f.size<=LIMIT);
+  if(valid.length!==list.length) setStatus(`Beberapa file ditolak (bukan JPG/PNG atau melebihi ${fmtBytes(LIMIT)}).`,"warn");
+  files=files.concat(valid);
+  renderFiles();
+  $("process").disabled=files.length<1;
+  $("donePanel").style.display="none"; $("step3label").style.display="none";
+}
+function renderFiles(){
+  $("orderHint").style.display=files.length>1?"block":"none";
+  $("files").innerHTML=files.map((f,i)=>`
+    <div class="filerow">
+      <div class="ficon" style="background:linear-gradient(135deg,#ffb84f,#e08a1e)">IMG</div>
+      <div class="fname"><b>${escapeHtml(f.name)}</b><small>${fmtBytes(f.size)}</small></div>
+      <button data-up="${i}" ${i===0?"disabled":""}>↑</button>
+      <button data-down="${i}" ${i===files.length-1?"disabled":""}>↓</button>
+      <button data-rm="${i}">✕</button>
+    </div>`).join("");
+  $("files").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{files.splice(+b.dataset.rm,1);renderFiles();$("process").disabled=files.length<1;});
+  $("files").querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{const i=+b.dataset.up;[files[i-1],files[i]]=[files[i],files[i-1]];renderFiles();});
+  $("files").querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>{const i=+b.dataset.down;[files[i+1],files[i]]=[files[i],files[i+1]];renderFiles();});
+}
+
+function setProgress(p,text){
+  const pct=Math.max(0,Math.min(100,Math.round(p)));
+  $("progressWrap").classList.add("show");
+  $("progressBar").style.width=pct+"%"; $("progressPct").textContent=pct+"%"; $("progressText").textContent=text||"Memproses...";
+}
+function setStatus(msg,type=""){ const el=$("status"); el.textContent=msg; el.className="status show "+type; }
+
+$("process").onclick=async()=>{
+  if(!files.length) return;
+  cancelled=false; $("process").disabled=true; $("status").className="status";
+  try{
+    const blob=await imagesToPdf(files,setProgress,()=>cancelled);
+    const outputName=`${safeBase(files[0].name)}-gabungan.pdf`;
+    const url=URL.createObjectURL(blob);
+    $("resultRow").innerHTML=`<div class="ficon" style="background:linear-gradient(135deg,#ff6b7a,#e0384f)">PDF</div><div class="grow"><b>${escapeHtml(outputName)}</b><small>${files.length} gambar • ${fmtBytes(blob.size)}</small></div><a class="dl" href="${url}" download="${escapeAttr(outputName)}">Download PDF</a>`;
+    $("step3label").style.display="flex"; $("donePanel").style.display="block";
+    $("donePanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ setStatus(failMessage(e),"err"); }
+  finally{ $("process").disabled=false; }
+};
+
+$("another").onclick=()=>{
+  files=[]; renderFiles(); $("process").disabled=true;
+  $("donePanel").style.display="none"; $("step3label").style.display="none";
+  $("progressWrap").classList.remove("show"); $("status").className="status"; $("fileInput").value="";
+};
+</script>
+</body>
+</html>
